@@ -14,8 +14,8 @@ export async function register({ username, password, email }) {
     throw err;
   }
 
-  const salt = crypto.randomBytes(32);
-  const verifier = computeVerifierFor({ username, password, salt });
+  const salt = crypto.randomBytes(32); // BINARY(32)
+  const verifier = computeVerifierFor({ username, password, salt }); // BINARY(32)
 
   await authPool.execute(
     "INSERT INTO account (username, salt, verifier, email) VALUES (?, ?, ?, ?)",
@@ -38,19 +38,18 @@ export async function verifyPassword({ username, password }) {
   const ok =
     verifierDb.length === verifierTry.length &&
     crypto.timingSafeEqual(verifierDb, verifierTry);
-  if (!ok) return { ok: false };
 
+  if (!ok) return { ok: false };
   return {
     ok: true,
     account: { id: row.id, username: row.username, email: row.email ?? "" },
   };
 }
 
-export async function issueJwt({ id, username }) {
+export function issueJwt({ id, username }) {
   const secret = process.env.JWT_SECRET || "changeme";
   const expiresIn = process.env.JWT_EXPIRES_IN || "1d";
-  const token = jwt.sign({ id, username }, secret, { expiresIn });
-  return token;
+  return jwt.sign({ id, username }, secret, { expiresIn });
 }
 
 export async function getMeById(id) {

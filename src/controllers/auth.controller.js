@@ -45,16 +45,12 @@ export async function login(req, res) {
     if (!result.ok)
       return res.status(401).json({ error: "invalid credentials" });
 
-    const token = await authService.issueJwt({
+    const token = authService.issueJwt({
       id: result.account.id,
       username: result.account.username,
     });
 
-    // Return token in JSON. The Next.js API will set the httpOnly cookie.
-    return res.json({
-      token,
-      account: result.account, // { id, username, email }
-    });
+    return res.json({ token, account: result.account });
   } catch (err) {
     console.error("login error:", err);
     return res.status(500).json({ error: "internal error" });
@@ -62,7 +58,6 @@ export async function login(req, res) {
 }
 
 export async function me(req, res) {
-  // req.user injected by requireAuth middleware
   const user = await authService.getMeById(req.user.id);
   if (!user) return res.status(404).json({ error: "not found" });
   return res.json({ account: user });
