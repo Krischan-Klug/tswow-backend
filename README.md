@@ -1,7 +1,7 @@
 # TSWoW / TrinityCore Auth Backend (Node + Express)
 
 A small, modular backend for **account registration** (SRP6) with room to grow (login, characters, etc.).  
-The frontend (Next.js) calls this backend **via a server-side proxy** to avoid mixed content.
+The frontend (Next.js or React) calls this backend **via a server-side proxy** to avoid mixed content.
 
 ---
 
