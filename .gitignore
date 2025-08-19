@@ -1,0 +1,40 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Env 
+.env
+.env.*
+!.env.example
+
+# Logs & runtime
+logs/
+*.log
+*.pid
+pids/
+*.seed
+*.pid.lock
+
+# Build/Artifacts 
+dist/
+build/
+coverage/
+.nyc_output/
+
+# Editor/IDE
+.vscode/
+.idea/
+
+# OS-spezifisch 
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Misc
+.tmp/
+temp/
+tmp/
