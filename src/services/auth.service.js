@@ -1,10 +1,9 @@
-// Services host the business logic, talk to DB via pools, call utils, etc.
 import { authPool } from "../db/pool.js";
 import { computeVerifierFor } from "../utils/srp.js";
 import crypto from "crypto";
+import jwt from "jsonwebtoken";
 
 export async function register({ username, password, email }) {
-  // Check if user exists
   const [rows] = await authPool.execute(
     "SELECT id FROM account WHERE username = ?",
     [username]
@@ -15,7 +14,6 @@ export async function register({ username, password, email }) {
     throw err;
   }
 
-  // SRP6 salt + verifier (BINARY(32))
   const salt = crypto.randomBytes(32);
   const verifier = computeVerifierFor({ username, password, salt });
 
@@ -26,21 +24,40 @@ export async function register({ username, password, email }) {
 }
 
 export async function verifyPassword({ username, password }) {
-  // Load user's salt + verifier
   const [rows] = await authPool.execute(
-    "SELECT salt, verifier FROM account WHERE username = ? LIMIT 1",
+    "SELECT id, username, email, salt, verifier FROM account WHERE username = ? LIMIT 1",
     [username]
   );
-  if (rows.length === 0) return false;
+  if (rows.length === 0) return { ok: false };
 
   const row = rows[0];
-  const salt = Buffer.from(row.salt); // BINARY(32)
+  const salt = Buffer.from(row.salt);
   const verifierDb = Buffer.from(row.verifier);
-
-  // Re-compute verifier with provided password and stored salt
   const verifierTry = computeVerifierFor({ username, password, salt });
 
-  // Constant-time compare
-  if (verifierDb.length !== verifierTry.length) return false;
-  return crypto.timingSafeEqual(verifierDb, verifierTry);
+  const ok =
+    verifierDb.length === verifierTry.length &&
+    crypto.timingSafeEqual(verifierDb, verifierTry);
+  if (!ok) return { ok: false };
+
+  return {
+    ok: true,
+    account: { id: row.id, username: row.username, email: row.email ?? "" },
+  };
+}
+
+export async function issueJwt({ id, username }) {
+  const secret = process.env.JWT_SECRET || "changeme";
+  const expiresIn = process.env.JWT_EXPIRES_IN || "1d";
+  const token = jwt.sign({ id, username }, secret, { expiresIn });
+  return token;
+}
+
+export async function getMeById(id) {
+  const [rows] = await authPool.execute(
+    "SELECT id, username, email FROM account WHERE id = ? LIMIT 1",
+    [id]
+  );
+  if (rows.length === 0) return null;
+  return rows[0];
 }
