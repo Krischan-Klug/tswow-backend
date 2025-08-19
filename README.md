@@ -65,7 +65,6 @@ your-backend/
 
 - Node.js **18+** (recommend **20+**)
 - MySQL/MariaDB with **TrinityCore/TSWoW auth** schema
-- Table `auth.account` must contain: `username`, `salt BINARY(32)`, `verifier BINARY(32)`, `email` (others can use defaults)
 
 ---
 
@@ -75,8 +74,7 @@ your-backend/
 
 ```bash
 npm i
-# optional for dev reloads:
-npm i -D nodemon
+
 ```
 
 2. **Environment variables**
@@ -187,15 +185,6 @@ Create an account with SRP6 in the `auth.account` table.
 - `201 { "message": "account created" }`
 - `409 { "error": "username already exists" }`
 - `400/500` on validation/internal errors
-
----
-
-## Roadmap
-
-- `POST /auth/login` (verify SRP6 password, then issue **JWT httpOnly cookie**)
-- `GET /auth/me` (who am I?)
-- `GET /characters?accountId=...` (via `characters` DB; pagination)
-- Tighten **CORS** in production (restrict to your domains)
 
 ---
 
