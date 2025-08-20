@@ -9,8 +9,17 @@
     "start": "node index.js",
     "dev": "nodemon index.js"
   },
-  "engines": { "node": ">=18" },
-  "keywords": ["tswow", "trinitycore", "srp6", "express", "mysql2", "auth"],
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "tswow",
+    "trinitycore",
+    "srp6",
+    "express",
+    "mysql2",
+    "auth"
+  ],
   "license": "MIT",
   "dependencies": {
     "compression": "^1.7.4",

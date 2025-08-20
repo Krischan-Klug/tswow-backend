@@ -1,4 +1,3 @@
-// Controllers handle request/response; business logic lives in services.
 import * as authService from "../services/auth.service.js";
 
 export async function register(req, res) {
@@ -39,16 +38,27 @@ export async function login(req, res) {
   const uname = String(username).trim();
 
   try {
-    const ok = await authService.verifyPassword({
+    const result = await authService.verifyPassword({
       username: uname,
       password: String(password),
     });
-    if (!ok) return res.status(401).json({ error: "invalid credentials" });
+    if (!result.ok)
+      return res.status(401).json({ error: "invalid credentials" });
 
-    // Next step (later): issue JWT or httpOnly cookie here.
-    return res.json({ message: "login ok" });
+    const token = authService.issueJwt({
+      id: result.account.id,
+      username: result.account.username,
+    });
+
+    return res.json({ token, account: result.account });
   } catch (err) {
     console.error("login error:", err);
     return res.status(500).json({ error: "internal error" });
   }
+}
+
+export async function me(req, res) {
+  const user = await authService.getMeById(req.user.id);
+  if (!user) return res.status(404).json({ error: "not found" });
+  return res.json({ account: user });
 }
