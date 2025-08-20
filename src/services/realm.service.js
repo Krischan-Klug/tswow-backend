@@ -1,4 +1,4 @@
-import { authPool } from "../db/pool";
+import { authPool } from "../db/pool.js";
 
 export async function getRealmById(id) {
   const [rows] = await authPool.execute(
