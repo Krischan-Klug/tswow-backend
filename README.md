@@ -186,6 +186,22 @@ Create an account with SRP6 in the `auth.account` table.
 - `409 { "error": "username already exists" }`
 - `400/500` on validation/internal errors
 
+### `POST /auth/login`
+
+Verify a user's password using SRP6 (`salt` + `verifier`).
+
+**Body**
+
+```json
+{ "username": "Foo", "password": "Bar" }
+```
+
+**Responses**
+
+- `200 { "message": "login ok" }`
+- `401 { "error": "invalid credentials" }`
+- `400/500` on validation/internal errors
+
 ---
 
 ## Security Notes
