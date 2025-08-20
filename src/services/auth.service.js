@@ -60,3 +60,12 @@ export async function getMeById(id) {
   if (rows.length === 0) return null;
   return rows[0];
 }
+
+export async function getPrivilegesById(id) {
+  const [rows] = await authPool.execute(
+    "SELECT SecurityLevel FROM account_access WHERE AccountID = ? LIMIT 1",
+    [id]
+  );
+  if (rows.length === 0) return null;
+  return rows[0];
+}
