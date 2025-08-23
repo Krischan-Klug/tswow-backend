@@ -4,6 +4,7 @@ import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import authRoutes from "./routes/auth.routes.js";
+import realmRoutes from "./routes/realm.routes.js";
 
 const app = express();
 
@@ -47,6 +48,7 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 
 /** Routes */
 app.use("/auth", authRoutes);
+app.use("/realm", realmRoutes);
 
 /** Fallback 404 */
 app.use((req, res) => res.status(404).json({ error: "Not found" }));
