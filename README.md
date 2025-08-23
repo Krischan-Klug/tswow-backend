@@ -8,6 +8,7 @@ The frontend (Next.js or React) calls this backend **via a server-side proxy** t
 ## Features
 
 - `POST /auth/register` — creates accounts in the **auth** DB using **SRP6** (`salt` + `verifier`, both `BINARY(32)`)
+- `POST /realm/info` — fetches a realm's name, address and population from `realmlist` by ID
 - Express middleware: **helmet**, **compression**, **CORS**
 - **Rate limits** per route (anti-spam) with IPv6-safe keys
 - **MySQL connection pool**
@@ -43,11 +44,14 @@ your-backend/
 └─ src/
    ├─ app.js           # builds Express app (middlewares + routes)
    ├─ routes/
-   │  └─ auth.routes.js
+   │  ├─ auth.routes.js
+   │  └─ realm.routes.js
    ├─ controllers/
-   │  └─ auth.controller.js
+   │  ├─ auth.controller.js
+   │  └─ realm.controller.js
    ├─ services/
-   │  └─ auth.service.js
+   │  ├─ auth.service.js
+   │  └─ realm.service.js
    ├─ db/
    │  └─ pool.js       # mysql2 pools (auth; later characters/world)
    ├─ middleware/
@@ -200,6 +204,22 @@ Verify a user's password using SRP6 (`salt` + `verifier`).
 
 - `200 { "message": "login ok" }`
 - `401 { "error": "invalid credentials" }`
+- `400/500` on validation/internal errors
+
+### `POST /realm/info`
+
+Retrieve a realm's basic information from `realmlist`.
+
+**Body**
+
+```json
+{ "id": 1 }
+```
+
+**Responses**
+
+- `200 { "name": "My Realm", "address": "127.0.0.1:8085", "population": 1 }`
+- `404 { "error": "no realm found" }`
 - `400/500` on validation/internal errors
 
 ---
