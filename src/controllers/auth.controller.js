@@ -59,8 +59,8 @@ export async function login(req, res) {
 
 export async function me(req, res) {
   const account = await authService.getMeById(req.user.id);
-  const account_access = await authService.getPrivilegesById(req.user.id);
-
+  let account_access = await authService.getPrivilegesById(req.user.id);
+  if (!account_access) account_access = { SecurityLevel: 1 };
   const user = { ...account, ...account_access };
   if (!user) return res.status(404).json({ error: "not found" });
   return res.json({ account: user });
