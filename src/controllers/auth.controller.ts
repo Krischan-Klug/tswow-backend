@@ -1,7 +1,13 @@
+import { Request, Response } from "express";
 import * as authService from "../services/auth.service.js";
+import { AuthRequest } from "../middleware/authJwt.js";
 
-export async function register(req, res) {
-  const { username, password, email } = req.body || {};
+export async function register(req: Request, res: Response): Promise<Response> {
+  const { username, password, email } = (req.body || {}) as {
+    username?: string;
+    password?: string;
+    email?: string;
+  };
   if (!username || !password) {
     return res
       .status(400)
@@ -19,8 +25,8 @@ export async function register(req, res) {
       email: email ? String(email) : "",
     });
     return res.status(201).json({ message: "account created" });
-  } catch (err) {
-    if (err.code === "USERNAME_EXISTS") {
+  } catch (err: unknown) {
+    if (typeof err === "object" && err && (err as any).code === "USERNAME_EXISTS") {
       return res.status(409).json({ error: "username already exists" });
     }
     console.error("register error:", err);
@@ -28,8 +34,11 @@ export async function register(req, res) {
   }
 }
 
-export async function login(req, res) {
-  const { username, password } = req.body || {};
+export async function login(req: Request, res: Response): Promise<Response> {
+  const { username, password } = (req.body || {}) as {
+    username?: string;
+    password?: string;
+  };
   if (!username || !password) {
     return res
       .status(400)
@@ -46,20 +55,20 @@ export async function login(req, res) {
       return res.status(401).json({ error: "invalid credentials" });
 
     const token = authService.issueJwt({
-      id: result.account.id,
-      username: result.account.username,
+      id: result.account!.id,
+      username: result.account!.username,
     });
 
     return res.json({ token, account: result.account });
-  } catch (err) {
+  } catch (err: unknown) {
     console.error("login error:", err);
     return res.status(500).json({ error: "internal error" });
   }
 }
 
-export async function me(req, res) {
-  const account = await authService.getMeById(req.user.id);
-  let account_access = await authService.getPrivilegesById(req.user.id);
+export async function me(req: AuthRequest, res: Response): Promise<Response> {
+  const account = await authService.getMeById(req.user!.id);
+  let account_access = await authService.getPrivilegesById(req.user!.id);
   if (!account_access) account_access = { SecurityLevel: 0 };
   const user = { ...account, ...account_access };
   if (!user) return res.status(404).json({ error: "not found" });
