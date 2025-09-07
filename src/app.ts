@@ -5,6 +5,7 @@ import compression from "compression";
 import rateLimit from "express-rate-limit";
 import authRoutes from "./routes/auth.routes.js";
 import realmRoutes from "./routes/realm.routes.js";
+import errorHandler from "./middleware/error.js";
 
 const app = express();
 
@@ -52,5 +53,6 @@ app.use("/realm", realmRoutes);
 
 /** Fallback 404 */
 app.use((req: Request, res: Response) => res.status(404).json({ error: "Not found" }));
+app.use(errorHandler);
 
 export default app;
