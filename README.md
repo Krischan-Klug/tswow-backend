@@ -1,12 +1,13 @@
-# TSWoW / TrinityCore Auth Backend (Node + Express)
+# TSWoW / TrinityCore Auth Backend (Node + Express + TypeScript)
 
-A small, modular backend for **account registration** (SRP6) with room to grow (login, characters, etc.).  
+A small, modular **TypeScript** backend for **account registration** (SRP6) with room to grow (login, characters, etc.).
 The frontend (Next.js or React) calls this backend **via a server-side proxy** to avoid mixed content.
 
 ---
 
 ## Features
 
+- Written in **TypeScript** with strict typing
 - `POST /auth/register` — creates accounts in the **auth** DB using **SRP6** (`salt` + `verifier`, both `BINARY(32)`)
 - `POST /realm/info` — fetches a realm's name, address and population from `realmlist` by ID
 - Express middleware: **helmet**, **compression**, **CORS**
@@ -37,28 +38,30 @@ The frontend (Next.js or React) calls this backend **via a server-side proxy** t
 ```
 your-backend/
 ├─ package.json
+├─ tsconfig.json
 ├─ .env                # real secrets (NOT in git)
 ├─ .env.example        # template (IN git)
 ├─ .gitignore
-├─ index.js            # server entry (loads env, boots app)
+├─ index.ts            # server entry (loads env, boots app)
+├─ dist/               # compiled JavaScript output
 └─ src/
-   ├─ app.js           # builds Express app (middlewares + routes)
+   ├─ app.ts           # builds Express app (middlewares + routes)
    ├─ routes/
-   │  ├─ auth.routes.js
-   │  └─ realm.routes.js
+   │  ├─ auth.routes.ts
+   │  └─ realm.routes.ts
    ├─ controllers/
-   │  ├─ auth.controller.js
-   │  └─ realm.controller.js
+   │  ├─ auth.controller.ts
+   │  └─ realm.controller.ts
    ├─ services/
-   │  ├─ auth.service.js
-   │  └─ realm.service.js
+   │  ├─ auth.service.ts
+   │  └─ realm.service.ts
    ├─ db/
-   │  └─ pool.js       # mysql2 pools (auth; later characters/world)
+   │  └─ pool.ts       # mysql2 pools (auth; later characters/world)
    ├─ middleware/
-   │  ├─ rateLimiters.js
-   │  └─ error.js      # (optional)
+   │  ├─ rateLimiters.ts
+   │  └─ error.ts
    └─ utils/
-      └─ srp.js
+      └─ srp.ts
 ```
 
 **Rule of thumb:** Routes → Controllers → Services → DB Pools. (Not the other way around.)
@@ -101,9 +104,9 @@ DB_NAME=auth
 3. **Run**
 
 ```bash
-npm run dev   # dev with nodemon
+npm run dev      # dev with nodemon + ts-node
 # or
-npm start
+npm start        # builds (tsc) and runs dist/
 ```
 
 **Minimal Windows watchdog (optional):**
@@ -125,11 +128,16 @@ goto loop
 **Why:** Your site runs on HTTPS, but the backend might be HTTP. Browsers block HTTPS → HTTP calls (mixed content).  
 **Solution:** Call your own Next.js API route (HTTPS), which server-side calls the backend.
 
-### 1) API Route (Proxy): `pages/api/register.js`
+### 1) API Route (Proxy): `pages/api/register.ts`
 
-```js
+```ts
+import type { NextApiRequest, NextApiResponse } from "next";
+
 // Server-side proxy → avoids mixed content
-export default async function handler(req, res) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
