@@ -32,7 +32,7 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.14.3",
-    "trinitycore-srp6": "^1.1.1"
+    "trinitycore-srp6": "github:Krischan-Klug/trinitycore-srp6#main"
   },
   "devDependencies": {
     "nodemon": "^3.1.10",
