@@ -3,8 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
-import authRoutes from "./routes/auth.routes.js";
-import realmRoutes from "./routes/realm.routes.js";
+import initPlugins from "./plugins/index.js";
 import errorHandler from "./middleware/error.js";
 
 const app = express();
@@ -47,9 +46,8 @@ app.use(
 /** Healthcheck */
 app.get("/health", (_req: Request, res: Response) => res.json({ ok: true }));
 
-/** Routes */
-app.use("/auth", authRoutes);
-app.use("/realm", realmRoutes);
+/** Load plugins */
+await initPlugins(app);
 
 /** Fallback 404 */
 app.use((req: Request, res: Response) => res.status(404).json({ error: "Not found" }));

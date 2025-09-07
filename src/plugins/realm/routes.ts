@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getRealmInfo } from "../controllers/realm.controller.js";
+import { getRealmInfo } from "./controller.js";
 
 const router = Router();
 

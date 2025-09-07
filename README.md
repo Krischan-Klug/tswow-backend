@@ -10,6 +10,7 @@ The frontend (Next.js or React) calls this backend **via a server-side proxy** t
 - Written in **TypeScript** with strict typing
 - `POST /auth/register` — creates accounts in the **auth** DB using **SRP6** (`salt` + `verifier`, both `BINARY(32)`)
 - `POST /realm/info` — fetches a realm's name, address and population from `realmlist` by ID
+- Modular **plugin system** with auto-generated `plugins.json` to enable/disable features
 - Express middleware: **helmet**, **compression**, **CORS**
 - **Rate limits** per route (anti-spam) with IPv6-safe keys
 - **MySQL connection pool**
@@ -45,16 +46,20 @@ your-backend/
 ├─ index.ts            # server entry (loads env, boots app)
 ├─ dist/               # compiled JavaScript output
 └─ src/
-   ├─ app.ts           # builds Express app (middlewares + routes)
-   ├─ routes/
-   │  ├─ auth.routes.ts
-   │  └─ realm.routes.ts
-   ├─ controllers/
-   │  ├─ auth.controller.ts
-   │  └─ realm.controller.ts
-   ├─ services/
-   │  ├─ auth.service.ts
-   │  └─ realm.service.ts
+   ├─ app.ts           # builds Express app (middlewares + plugins)
+   ├─ plugins/         # feature modules
+   │  ├─ index.ts      # loads modules & generates plugins.json
+   │  ├─ types.ts
+   │  ├─ auth/
+   │  │  ├─ index.ts
+   │  │  ├─ controller.ts
+   │  │  ├─ routes.ts
+   │  │  └─ service.ts
+   │  └─ realm/
+   │     ├─ index.ts
+   │     ├─ controller.ts
+   │     ├─ routes.ts
+   │     └─ service.ts
    ├─ db/
    │  └─ pool.ts       # mysql2 pools (auth; later characters/world)
    ├─ middleware/
@@ -64,7 +69,24 @@ your-backend/
       └─ srp.ts
 ```
 
-**Rule of thumb:** Routes → Controllers → Services → DB Pools. (Not the other way around.)
+**Rule of thumb:** Plugins → Routes → Controllers → Services → DB Pools. (Not the other way around.)
+
+---
+
+## Plugin Configuration
+
+Plugins live under `src/plugins/`. On first run the server scans this directory and creates a `plugins.json`
+file listing all discovered modules:
+
+```json
+{
+  "auth": true,
+  "realm": true
+}
+```
+
+Set any entry to `false` to disable that plugin. The file is `.gitignore`d so each environment can toggle
+modules independently.
 
 ---
 
@@ -108,6 +130,8 @@ npm run dev      # dev with nodemon + ts-node
 # or
 npm start        # builds (tsc) and runs dist/
 ```
+
+A `plugins.json` file will be generated on first run. Edit this file to enable or disable individual modules.
 
 **Minimal Windows watchdog (optional):**
 
@@ -181,6 +205,8 @@ await fetch("/api/register", {
 ---
 
 ## Current API
+
+These endpoints are provided by plugins and are only available when their respective modules are enabled.
 
 ### `POST /auth/register`
 

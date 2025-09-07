@@ -1,5 +1,5 @@
-import { authPool } from "../db/pool.js";
-import { computeVerifierFor } from "../utils/srp.js";
+import { authPool } from "../../db/pool.js";
+import { computeVerifierFor } from "../../utils/srp.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import type { StringValue } from "ms";
