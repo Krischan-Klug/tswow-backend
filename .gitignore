@@ -38,3 +38,5 @@ Desktop.ini
 .tmp/
 temp/
 tmp/
+# Plugin configuration
+plugins.json

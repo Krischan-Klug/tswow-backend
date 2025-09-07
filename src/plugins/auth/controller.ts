@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import * as authService from "../services/auth.service.js";
-import { AuthRequest } from "../middleware/authJwt.js";
+import * as authService from "./service.js";
+import { AuthRequest } from "../../middleware/authJwt.js";
 
 export async function register(req: Request, res: Response): Promise<Response> {
   const { username, password, email } = (req.body || {}) as {

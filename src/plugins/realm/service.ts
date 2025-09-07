@@ -1,4 +1,4 @@
-import { authPool } from "../db/pool.js";
+import { authPool } from "../../db/pool.js";
 
 export interface Realm {
   name: string;

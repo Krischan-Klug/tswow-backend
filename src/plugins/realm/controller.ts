@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import * as realmService from "../services/realm.service.js";
+import * as realmService from "./service.js";
 
 export async function getRealmInfo(
   req: Request,
