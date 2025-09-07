@@ -9,7 +9,7 @@
     "build": "tsc",
     "prestart": "npm run build",
     "start": "node dist/index.js",
-    "dev": "cross-env TS_NODE_TRANSPILE_ONLY=1 nodemon --exec \"node --loader ts-node/esm\" index.ts"
+    "dev": "tsx watch index.ts"
   },
   "engines": {
     "node": ">=18"
@@ -44,6 +44,7 @@
     "cross-env": "^7.0.3",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.5",
     "typescript": "^5.4.2"
   }
 }
