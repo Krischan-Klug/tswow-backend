@@ -117,7 +117,10 @@ DB_HOST=127.0.0.1
 DB_PORT=3306
 DB_USER=tswow
 DB_PASS=password
-DB_NAME=auth
+DB_AUTH_1=auth
+DB_WORLD_D_1=default.dataset.world.dest
+DB_WORLD_S_1=default.dataset.world.source
+DB_CHARACTERS_1=default.realm.characters
 
 # (optional later)
 # DB_CHAR_DB=characters
