@@ -1,4 +1,4 @@
-# TSWoW / TrinityCore Auth Backend (Node + Express + TypeScript)
+# TSWoW / TrinityCore Auth Backend (Node + Express + TypeScript + MySQL)
 
 A small, modular **TypeScript** backend for **account registration** (SRP6) with room to grow (login, characters, etc.).
 The frontend (Next.js or React) calls this backend **via a server-side proxy** to avoid mixed content.
