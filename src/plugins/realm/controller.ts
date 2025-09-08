@@ -6,7 +6,7 @@ export async function getRealmInfo(
   res: Response
 ): Promise<Response> {
   const id = Number(req.body.id) || 1;
-  const playerCount = await realmService.getPlayerCount(id);
+  const playerCount = await realmService.getPlayerCountById(id);
   const realmInfo = await realmService.getRealmById(id);
   const realm = { ...realmInfo, ...playerCount };
 

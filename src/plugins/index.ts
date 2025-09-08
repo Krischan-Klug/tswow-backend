@@ -61,5 +61,5 @@ export default async function initPlugins(app: Express): Promise<void> {
       plugin.init(app);
     }
   }
+  console.log("Plugins loaded:", Object.keys(plugins).join(", "));
 }
-

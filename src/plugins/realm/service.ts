@@ -15,7 +15,7 @@ export async function getRealmById(id: number): Promise<Realm | null> {
   return (rows as any[])[0];
 }
 
-export async function getPlayerCount(id: number) {
+export async function getPlayerCountById(id: number) {
   const charactersPool = getCharactersPool(id);
   const [rows] = await charactersPool.execute(
     "SELECT COUNT(*) AS population FROM characters WHERE online = 1",
