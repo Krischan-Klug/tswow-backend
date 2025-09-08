@@ -33,7 +33,6 @@ if (allowedOrigin) {
 /** If behind reverse proxy / Cloudflare / IIS */
 app.set("trust proxy", 1);
 
-/** Global, mild rate limit */
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -43,14 +42,13 @@ app.use(
   })
 );
 
-/** Healthcheck */
 app.get("/health", (_req: Request, res: Response) => res.json({ ok: true }));
 
-/** Load plugins */
 await initPlugins(app);
 
-/** Fallback 404 */
-app.use((req: Request, res: Response) => res.status(404).json({ error: "Not found" }));
+app.use((req: Request, res: Response) =>
+  res.status(404).json({ error: "Not found" })
+);
 app.use(errorHandler);
 
 export default app;
