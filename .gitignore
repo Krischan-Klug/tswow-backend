@@ -40,3 +40,5 @@ temp/
 tmp/
 # Plugin configuration
 plugins.json
+# Database configuration
+db.json

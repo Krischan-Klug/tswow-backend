@@ -1,0 +1,21 @@
+{
+  "auth": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "tswow",
+    "password": "password",
+    "database": "auth"
+  },
+  "realms": [
+    {
+      "id": 1,
+      "host": "127.0.0.1",
+      "port": 3306,
+      "user": "tswow",
+      "password": "password",
+      "worldDest": "default.dataset.world.dest",
+      "worldSource": "default.dataset.world.source",
+      "characters": "default.realm.characters"
+    }
+  ]
+}
