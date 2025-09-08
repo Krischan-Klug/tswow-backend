@@ -1,7 +1,8 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import { logSampleMessage } from "./service.js";
+import { AuthRequest } from "../../middleware/authJwt.js";
 
-export function showMessage(req: Request, res: Response): Response {
+export function showMessage(req: AuthRequest, res: Response): Response {
   logSampleMessage();
-  return res.json({ message: "sample plugin executed" });
+  return res.json({ message: `sample plugin executed for ${req.user?.username}` });
 }
