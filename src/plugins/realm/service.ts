@@ -1,4 +1,4 @@
-import { authPool, charactersPool } from "../../db/pool.js";
+import { authPool, getCharactersPool } from "../../db/pool.js";
 
 export interface Realm {
   name: string;
@@ -15,7 +15,8 @@ export async function getRealmById(id: number): Promise<Realm | null> {
   return (rows as any[])[0];
 }
 
-export async function getPlayerCount() {
+export async function getPlayerCount(id: number) {
+  const charactersPool = getCharactersPool(id);
   const [rows] = await charactersPool.execute(
     "SELECT COUNT(*) AS population FROM characters WHERE online = 1",
     []

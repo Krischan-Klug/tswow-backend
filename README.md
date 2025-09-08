@@ -42,6 +42,8 @@ your-backend/
 ├─ tsconfig.json
 ├─ .env                # real secrets (NOT in git)
 ├─ .env.example        # template (IN git)
+├─ db.json             # database config (NOT in git)
+├─ db.example.json     # template (IN git)
 ├─ .gitignore
 ├─ index.ts            # server entry (loads env, boots app)
 ├─ dist/               # compiled JavaScript output
@@ -61,7 +63,7 @@ your-backend/
    │     ├─ routes.ts
    │     └─ service.ts
    ├─ db/
-   │  └─ pool.ts       # mysql2 pools (auth; later characters/world)
+   │  └─ pool.ts       # mysql2 pools loaded from db.json
    ├─ middleware/
    │  ├─ rateLimiters.ts
    │  └─ error.ts
@@ -112,21 +114,40 @@ Create `.env` (use `.env.example` as a template):
 
 ```env
 PORT=3001
-
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_USER=tswow
-DB_PASS=password
-DB_AUTH_1=auth
-DB_WORLD_D_1=default.dataset.world.dest
-DB_WORLD_S_1=default.dataset.world.source
-DB_CHARACTERS_1=default.realm.characters
-
-# (optional later)
-# DB_CHAR_DB=characters
+FRONTEND_ORIGIN=http://localhost:3000
+JWT_SECRET=change_this_to_a_long_random_string
+JWT_EXPIRES_IN=1d
 ```
 
-3. **Run**
+3. **Database configuration**
+
+Create `db.json` (copy from `db.example.json`). Example:
+
+```json
+{
+  "auth": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "tswow",
+    "password": "password",
+    "database": "auth"
+  },
+  "realms": [
+    {
+      "id": 1,
+      "host": "127.0.0.1",
+      "port": 3306,
+      "user": "tswow",
+      "password": "password",
+      "worldDest": "default.dataset.world.dest",
+      "worldSource": "default.dataset.world.source",
+      "characters": "default.realm.characters"
+    }
+  ]
+}
+```
+
+4. **Run**
 
 ```bash
 npm run dev      # dev with nodemon + ts-node
