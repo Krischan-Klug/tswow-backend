@@ -57,7 +57,7 @@ function topoSort(plugins: Record<string, PluginInfo>): string[] {
     inDeg[name] = inDeg[name] ?? 0;
     for (const dep of info.deps) {
       if (!(dep in plugins)) {
-        throw new Error(`Plugin '${name}' depends on missing plugin '${dep}'`);
+        continue;
       }
       graph[dep] = graph[dep] || [];
       graph[dep].push(name);
@@ -107,11 +107,23 @@ export default async function initPlugins(app: Express): Promise<void> {
   const config = loadConfig(Object.keys(plugins));
   const order = topoSort(plugins);
   const enabledPlugins: string[] = [];
+  const skippedPlugins: Record<string, string[]> = {};
+  const loaded = new Set<string>();
   for (const name of order) {
-    if (config[name]) {
-      plugins[name].mod.init(app);
-      enabledPlugins.push(name);
+    if (!config[name]) {
+      continue;
     }
+    const missingDeps = plugins[name].deps.filter((dep) => !loaded.has(dep));
+    if (missingDeps.length) {
+      skippedPlugins[name] = missingDeps;
+      console.log(
+        `Skipping plugin '${name}' due to missing dependencies: ${missingDeps.join(", ")}`
+      );
+      continue;
+    }
+    plugins[name].mod.init(app);
+    enabledPlugins.push(name);
+    loaded.add(name);
   }
   console.log("Plugins loaded:", enabledPlugins.length, "/", order.length);
   console.log(
@@ -125,5 +137,12 @@ export default async function initPlugins(app: Express): Promise<void> {
       "\x1b[31m%s\x1b[0m",
       "Plugins disabled:",
       disabledPlugins.join(", ")
+    );
+  const depDisabled = Object.keys(skippedPlugins);
+  if (depDisabled.length)
+    console.log(
+      "\x1b[31m%s\x1b[0m",
+      "Plugins skipped (missing deps):",
+      depDisabled.map((n) => `${n} -> ${skippedPlugins[n].join(", ")}`).join("; ")
     );
 }
