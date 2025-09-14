@@ -26,6 +26,7 @@ export async function listCharacters(
     const charactersPerServer: ServerCharacters[] = await Promise.all(
       realms.map(async (realm) => ({
         serverId: realm.id,
+        serverName: realm.name,
         characters: await getCharactersForAccount(realm.id, accountId),
       }))
     );
