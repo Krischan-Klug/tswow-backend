@@ -116,3 +116,4 @@ export function getWorldPoolSource(id = 1): mysql.Pool {
 export function getCharactersPool(id = 1): mysql.Pool {
   return ensurePool(id).characters;
 }
+

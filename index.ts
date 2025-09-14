@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ quiet: true });
 
 import { createServer } from "http";
 import app from "./src/app.js";

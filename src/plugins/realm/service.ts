@@ -1,4 +1,4 @@
-import { authPool, getCharactersPool } from "../../db/pool.js";
+import { authPool, getCharactersPool } from "plugin-core";
 
 export interface Realm {
   name: string;

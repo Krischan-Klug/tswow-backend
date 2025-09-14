@@ -1,8 +1,14 @@
 import { Response } from "express";
-import { logSampleMessage } from "./service.js";
-import { AuthRequest } from "../../middleware/authJwt.js";
+import { logSampleMessage, getSampleMessage } from "./service.js";
+import type { AuthRequest } from "plugin-core";
 
-export function showMessage(req: AuthRequest, res: Response): Response {
+export async function showMessage(req: AuthRequest, res: Response): Promise<Response> {
   logSampleMessage();
-  return res.json({ message: `sample plugin executed for ${req.user?.username}` });
+  const realmId = Number(req.query?.id ?? 1) || 1;
+  const message = await getSampleMessage(realmId);
+  return res.json({
+    user: req.user?.username,
+    realmId,
+    message,
+  });
 }
