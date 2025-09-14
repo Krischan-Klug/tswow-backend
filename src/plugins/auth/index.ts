@@ -3,6 +3,7 @@ import routes from "./routes.js";
 
 export const AuthPlugin: ModulePlugin = {
   name: "auth",
+  deps: ["core"],
   init(app) {
     app.use("/auth", routes);
   },

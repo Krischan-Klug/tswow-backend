@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { logSampleMessage } from "./service.js";
-import { AuthRequest } from "../../middleware/authJwt.js";
+import type { AuthRequest } from "../core/index.js";
 
 export function showMessage(req: AuthRequest, res: Response): Response {
   logSampleMessage();

@@ -3,7 +3,7 @@ import routes from "./routes.js";
 
 export const SamplePlugin: ModulePlugin = {
   name: "sample",
-  deps: ["auth"],
+  deps: ["core", "auth"],
   init(app) {
     app.use("/sample", routes);
   },
