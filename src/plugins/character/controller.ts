@@ -3,6 +3,14 @@ import type { AuthRequest } from "plugin-core";
 import { getCharactersForAccount } from "./service.js";
 import { getRealmlist } from "plugin-realm";
 
+type CharactersForAccount = Awaited<ReturnType<typeof getCharactersForAccount>>;
+type Character = CharactersForAccount extends Array<infer T> ? T : never;
+
+interface ServerCharacters {
+  serverId: number;
+  characters: Character[];
+}
+
 export async function listCharacters(
   req: AuthRequest,
   res: Response
@@ -12,12 +20,19 @@ export async function listCharacters(
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const realms = await getRealmlist();
+  try {
+    const realms = await getRealmlist();
 
-  const characters = await Promise.all(
-    realms.map((realm) => getCharactersForAccount(realm.id, accountId))
-  );
+    const charactersPerServer: ServerCharacters[] = await Promise.all(
+      realms.map(async (realm) => ({
+        serverId: realm.id,
+        characters: await getCharactersForAccount(realm.id, accountId),
+      }))
+    );
 
-  console.log(characters);
-  return res.json({ characters });
+    return res.json({ characters: charactersPerServer });
+  } catch (err) {
+    console.error("listCharacters error:", err);
+    return res.status(500).json({ error: "Failed to load characters" });
+  }
 }
