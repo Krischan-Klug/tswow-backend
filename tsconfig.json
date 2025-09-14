@@ -7,8 +7,10 @@
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
-      "plugin-core": ["src/plugins/core/index.ts"],
-      "plugin-core/*": ["src/plugins/core/*"]
+      "plugin-*": [
+        "src/plugins/*/index.ts",
+        "src/plugins/*"
+      ]
     },
     "strict": true,
     "esModuleInterop": true,

@@ -50,6 +50,15 @@ Dependencies are declared per plugin via `deps` in each `index.ts` (e.g., `auth`
 The loader performs a topological sort so dependencies are initialized first. Set any entry to `false` to disable
 a plugin for a given environment. The file is `.gitignore`d so each environment can toggle modules independently.
 
+Inter-plugin imports:
+
+- Aliases are available for every plugin: `plugin-<folder>` maps to `src/plugins/<folder>/index.ts`.
+- Subpaths are supported: `plugin-<folder>/...` maps to files under that plugin.
+- Examples:
+  - `import { requireAuth } from "plugin-core";`
+  - `import { something } from "plugin-auth/service.js";`
+  - Keep the `.js` extension when importing non-index files (NodeNext ESM).
+
 ### Core Plugin
 
 The `core` plugin sits at the base of the dependency graph and initializes global middleware in its `init(app)`.
