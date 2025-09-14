@@ -19,17 +19,6 @@ async function discoverPlugins(): Promise<Record<string, PluginInfo>> {
     if (!entry.isDirectory()) {
       continue;
     }
-    const pkgFile = path.join(pluginsDir, entry.name, "package.json");
-    if (!fs.existsSync(pkgFile)) {
-      continue;
-    }
-    const pkg = JSON.parse(fs.readFileSync(pkgFile, "utf8")) as {
-      name?: string;
-      dependencies?: Record<string, string>;
-    };
-    if (!pkg.name) {
-      continue;
-    }
 
     const base = path.join(pluginsDir, entry.name, "index");
     let ext = "";
@@ -42,9 +31,13 @@ async function discoverPlugins(): Promise<Record<string, PluginInfo>> {
     }
 
     const mod = await import(`./${entry.name}/index${ext}`);
-    plugins[pkg.name] = {
-      mod: mod.default as ModulePlugin,
-      deps: Object.keys(pkg.dependencies || {}),
+    const plugin = mod.default as ModulePlugin | undefined;
+    if (!plugin || !plugin.name) {
+      continue;
+    }
+    plugins[plugin.name] = {
+      mod: plugin,
+      deps: plugin.deps ?? [],
     };
   }
   return plugins;
