@@ -1,4 +1,4 @@
-# TSWoW / TrinityCore Auth Backend (Node + Express + TypeScript + MySQL)
+﻿# TSWoW / TrinityCore Auth Backend (Node + Express + TypeScript + MySQL)
 
 A small, modular TypeScript backend for account registration (SRP6) with room to grow (login, realms, characters, etc.).
 The frontend (Next.js or React) should call this backend via a server-side proxy to avoid mixed content.
@@ -24,7 +24,7 @@ The frontend (Next.js or React) should call this backend via a server-side proxy
 ```
 [Browser Form]
    -> (POST /api/register)
-[Next.js API Route — Proxy]
+[Next.js API Route â€” Proxy]
    -> (server-side fetch)
 [Backend /auth/register]
    ->
@@ -88,7 +88,7 @@ Intended usage:
 npm i
 ```
 
-2. Environment variables (`.env` — use `.env.example` as a template)
+2. Environment variables (`.env` â€” use `.env.example` as a template)
 
 ```env
 PORT=3001
@@ -97,7 +97,7 @@ JWT_SECRET=change_this_to_a_long_random_string
 JWT_EXPIRES_IN=1d
 ```
 
-3. Database configuration (`db.json` — copy from `db.example.json`)
+3. Database configuration (`db.json` â€” copy from `db.example.json`)
 
 ```json
 {
@@ -133,9 +133,9 @@ npm run build && npm start
 
 ---
 
-## Frontend (Next.js) — Proxy Setup
+## Frontend (Next.js) â€” Proxy Setup
 
-Why: Your site runs on HTTPS, but the backend might be HTTP. Browsers block HTTPS → HTTP calls (mixed content).
+Why: Your site runs on HTTPS, but the backend might be HTTP. Browsers block HTTPS â†’ HTTP calls (mixed content).
 Solution: Call your own Next.js API route (HTTPS), which server-side calls the backend.
 
 1. API Route (Proxy): `pages/api/register.ts`
@@ -143,7 +143,7 @@ Solution: Call your own Next.js API route (HTTPS), which server-side calls the b
 ```ts
 import type { NextApiRequest, NextApiResponse } from "next";
 
-// Server-side proxy — avoids mixed content
+// Server-side proxy â€” avoids mixed content
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -281,72 +281,4 @@ Optional hardening (not enabled here):
 
 ## Writing Plugins
 
-This repository is designed to make adding your own features easy. A plugin is a small folder under `src/plugins/` that exports a `ModulePlugin` with a unique `name`, optional `deps`, and an `init(app)` that mounts routes or does setup work.
-
-- Location: create `src/plugins/hello/`
-- Identity: export `default` with `name: "hello"`
-- Order: declare `deps: ["core"]` if you rely on shared middleware/utils/DB
-- Routing: mount an Express `Router` inside `init(app)`
-- Discovery: the loader auto-detects `hello` and adds it to `plugins.json` (default `true`)
-
-Minimal example:
-
-`src/plugins/hello/index.ts`
-
-```ts
-import type { ModulePlugin } from "../types.js";
-import routes from "./routes.js";
-
-const HelloPlugin: ModulePlugin = {
-  name: "hello",
-  deps: ["core"],
-  init(app) {
-    app.use("/hello", routes);
-  },
-};
-
-export default HelloPlugin;
-```
-
-`src/plugins/hello/routes.ts`
-
-```ts
-import { Router } from "express";
-import { requireAuth } from "plugin-core";
-import { hello } from "./controller.js";
-
-const router = Router();
-router.get("/", requireAuth, hello);
-export default router;
-```
-
-`src/plugins/hello/controller.ts`
-
-```ts
-import type { Response } from "express";
-import type { AuthRequest } from "plugin-core";
-
-export function hello(req: AuthRequest, res: Response) {
-  return res.json({ message: `Hello, ${req.user?.username || "guest"}!` });
-}
-```
-
-Optional service with shared Core utilities:
-
-```ts
-// src/plugins/hello/service.ts
-import { authPool } from "plugin-core";
-
-export async function getAccountCount(): Promise<number> {
-  const [rows] = await authPool.execute("SELECT COUNT(*) AS c FROM account");
-  return Number((rows as any[])[0].c || 0);
-}
-```
-
-Key rules and tips:
-
-- Unique `name`: must not collide with other plugins.
-- Use Core: import shared pieces from `../core/index.js` to avoid hardcoded app paths.
-- Add `deps`: set `deps: ["core"]` (and any other plugin you depend on) so the loader initializes in the right order.
-- Imports with extension: keep the `.js` extension in imports (NodeNext resolution with TypeScript).
-- Enable/disable: toggle `plugins.json` to switch your plugin on or off per environment.
+See [Plugin Development](src/plugins/README.md).
