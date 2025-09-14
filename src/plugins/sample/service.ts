@@ -1,4 +1,4 @@
-import { getRealmById } from "plugin-realm/service.js";
+import { getRealmById } from "plugin-realm";
 
 export function logSampleMessage(): void {
   console.log("Sample plugin says hello!");

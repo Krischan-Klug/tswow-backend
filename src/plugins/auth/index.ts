@@ -10,3 +10,6 @@ export const AuthPlugin: ModulePlugin = {
 };
 
 export default AuthPlugin;
+
+// Re-export service layer for external plugin consumption
+export * from "./service.js";

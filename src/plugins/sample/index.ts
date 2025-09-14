@@ -10,3 +10,6 @@ export const SamplePlugin: ModulePlugin = {
 };
 
 export default SamplePlugin;
+
+// Re-export service layer for external plugin consumption
+export * from "./service.js";
