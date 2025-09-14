@@ -7,10 +7,7 @@
     "rootDir": ".",
     "baseUrl": ".",
     "paths": {
-      "plugin-*": [
-        "src/plugins/*/index.ts",
-        "src/plugins/*"
-      ]
+      "plugin-*": ["src/plugins/*/index.ts", "src/plugins/*"]
     },
     "strict": true,
     "esModuleInterop": true,
@@ -18,5 +15,8 @@
     "skipLibCheck": true
   },
   "include": ["src/**/*", "index.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "tsc-alias": {
+    "resolveFullPaths": true
+  }
 }
