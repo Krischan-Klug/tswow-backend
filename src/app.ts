@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import initPlugins from "./plugins/index.js";
-import { errorHandler } from "./plugins/core/index.js";
+import { errorHandler } from "plugin-core";
 
 const app = express();
 

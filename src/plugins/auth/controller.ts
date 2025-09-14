@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import * as authService from "./service.js";
-import type { AuthRequest } from "../core/index.js";
+import type { AuthRequest } from "plugin-core";
 
 export async function register(req: Request, res: Response): Promise<Response> {
   const { username, password, email } = (req.body || {}) as {

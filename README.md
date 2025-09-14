@@ -59,7 +59,7 @@ point so feature plugins don't need to know about app-level paths.
 Intended usage:
 
 - Feature plugins declare `deps: ["core"]` to ensure core runs first.
-- Feature plugins import what they need from `../core/index.js`.
+- Feature plugins import what they need from `plugin-core`.
 - Keep cross-cutting concerns in `core` so feature plugins stay slim and focused on their domain.
 
 ---
@@ -303,7 +303,7 @@ export default HelloPlugin;
 
 ```ts
 import { Router } from "express";
-import { requireAuth } from "../core/index.js";
+import { requireAuth } from "plugin-core";
 import { hello } from "./controller.js";
 
 const router = Router();
@@ -315,7 +315,7 @@ export default router;
 
 ```ts
 import type { Response } from "express";
-import type { AuthRequest } from "../core/index.js";
+import type { AuthRequest } from "plugin-core";
 
 export function hello(req: AuthRequest, res: Response) {
   return res.json({ message: `Hello, ${req.user?.username || "guest"}!` });
@@ -326,7 +326,7 @@ Optional service with shared Core utilities:
 
 ```ts
 // src/plugins/hello/service.ts
-import { authPool } from "../core/index.js";
+import { authPool } from "plugin-core";
 
 export async function getAccountCount(): Promise<number> {
   const [rows] = await authPool.execute("SELECT COUNT(*) AS c FROM account");

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { register, login, me } from "./controller.js";
-import { limiterRegister, limiterLogin, requireAuth } from "../core/index.js";
+import { limiterRegister, limiterLogin, requireAuth } from "plugin-core";
 
 const router = Router();
 

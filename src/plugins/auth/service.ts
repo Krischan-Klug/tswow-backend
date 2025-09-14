@@ -1,4 +1,4 @@
-import { authPool, computeVerifierFor } from "../core/index.js";
+import { authPool, computeVerifierFor } from "plugin-core";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import type { StringValue } from "ms";

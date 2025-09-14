@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { logSampleMessage } from "./service.js";
-import type { AuthRequest } from "../core/index.js";
+import type { AuthRequest } from "plugin-core";
 
 export function showMessage(req: AuthRequest, res: Response): Response {
   logSampleMessage();

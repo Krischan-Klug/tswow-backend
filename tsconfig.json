@@ -5,6 +5,11 @@
     "moduleResolution": "NodeNext",
     "outDir": "dist",
     "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "plugin-core": ["src/plugins/core/index.ts"],
+      "plugin-core/*": ["src/plugins/core/*"]
+    },
     "strict": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
