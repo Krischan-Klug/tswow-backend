@@ -3,8 +3,14 @@ import routes from "./routes.js";
 
 export const SamplePlugin: ModulePlugin = {
   name: "sample",
-  deps: ["core", "auth", "realm"],
-  init(app) {
+  version: "1.0.0",
+  description: "Example plugin showcasing structure and data access.",
+  deps: [
+    { name: "core", range: "^1.0.0" },
+    { name: "auth", range: "^1.0.0" },
+    { name: "realm", range: "^1.0.0" },
+  ],
+  async init(app, _context) {
     app.use("/sample", routes);
   },
 };

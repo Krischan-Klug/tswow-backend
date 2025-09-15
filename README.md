@@ -1,4 +1,4 @@
-﻿# TSWoW / TrinityCore Auth Backend (Node + Express + TypeScript + MySQL)
+# TSWoW / TrinityCore Auth Backend (Node + Express + TypeScript + MySQL)
 
 A small, modular TypeScript backend for account registration (SRP6) with room to grow (login, realms, characters, etc.).
 The frontend (Next.js or React) should call this backend via a server-side proxy to avoid mixed content.
@@ -8,7 +8,7 @@ The frontend (Next.js or React) should call this backend via a server-side proxy
 ## Features
 
 - TypeScript with strict typing
-- Modular plugin system with auto-discovery and `plugins.json`
+- Modular plugin system with auto-discovery, per-plugin config, and dev-time scaffolding
 - Core plugin centralizes global middleware and shared utils/DB
 - Endpoints: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /realm/info`
 - SRP6 (TrinityCore-compatible) account verification
@@ -24,7 +24,7 @@ The frontend (Next.js or React) should call this backend via a server-side proxy
 ```
 [Browser Form]
    -> (POST /api/register)
-[Next.js API Route â€” Proxy]
+[Next.js API Route — Proxy]
    -> (server-side fetch)
 [Backend /auth/register]
    ->
@@ -35,20 +35,20 @@ The frontend (Next.js or React) should call this backend via a server-side proxy
 
 ### Plugin System
 
-Plugins live under `src/plugins/`. On first run the server scans this directory and creates a `plugins.json`
-file listing all discovered modules. With the Core plugin, a typical file looks like:
+Plugins live under `src/plugins/`. On startup the loader discovers every folder and writes/maintains a `plugins.config.json` file with per-plugin flags:
 
 ```json
 {
-  "core": true,
-  "auth": true,
-  "realm": true
+  "core": { "enabled": true, "settings": {} },
+  "auth": { "enabled": true, "settings": {} }
 }
 ```
 
-Dependencies are declared per plugin via `deps` in each `index.ts` (e.g., `auth` and `realm` depend on `core`).
-The loader performs a topological sort so dependencies are initialized first. Set any entry to `false` to disable
-a plugin for a given environment. The file is `.gitignore`d so each environment can toggle modules independently.
+Treat this file like environment state: it is regenerated when new plugins appear and should stay out of source control (already listed in `.gitignore`). Set `enabled` to `false` to skip a plugin locally or extend `settings` with plugin-specific configuration.
+
+Each plugin exposes a `ModulePlugin` from its `index.ts` with a unique `name`, a semantic `version`, optional `description`, and dependency list. Dependencies are version-aware (`{ name: "auth", range: "^1.0.0" }`) and the loader topologically sorts modules. The `core` plugin is mandatory; the server refuses to start if it is missing, disabled, or has unresolved issues.
+
+During `npm run dev` the loader watches the `src/plugins` directory. Creating a new folder auto-scaffolds a starter plugin (index/routes/controller/service) that already depends on `core` and exports placeholder handlers. Set `TSWOW_PLUGIN_AUTO_SCAFFOLD=true` to enable the same behaviour outside the dev script if needed.
 
 Inter-plugin imports:
 
@@ -56,10 +56,9 @@ Inter-plugin imports:
 - Subpaths are supported: `plugin-<folder>/...` maps to files under that plugin.
 - Examples:
   - `import { requireAuth } from "plugin-core";`
-  - `import { something } from "plugin-auth/service.js";`
+  - `import { issueJwt } from "plugin-auth";`
   - Keep the `.js` extension when importing non-index files (NodeNext ESM).
-
-### Core Plugin
+\n\n### Core Plugin
 
 The `core` plugin sits at the base of the dependency graph and initializes global middleware in its `init(app)`.
 It also provides shared building blocks (e.g., auth guard, rate limiters, DB pools, SRP utilities) via a stable entry
@@ -88,7 +87,7 @@ Intended usage:
 npm i
 ```
 
-2. Environment variables (`.env` â€” use `.env.example` as a template)
+2. Environment variables (`.env` — use `.env.example` as a template)
 
 ```env
 PORT=3001
@@ -97,7 +96,7 @@ JWT_SECRET=change_this_to_a_long_random_string
 JWT_EXPIRES_IN=1d
 ```
 
-3. Database configuration (`db.json` â€” copy from `db.example.json`)
+3. Database configuration (`db.json` — copy from `db.example.json`)
 
 ```json
 {
@@ -133,9 +132,9 @@ npm run build && npm start
 
 ---
 
-## Frontend (Next.js) â€” Proxy Setup
+## Frontend (Next.js) — Proxy Setup
 
-Why: Your site runs on HTTPS, but the backend might be HTTP. Browsers block HTTPS â†’ HTTP calls (mixed content).
+Why: Your site runs on HTTPS, but the backend might be HTTP. Browsers block HTTPS → HTTP calls (mixed content).
 Solution: Call your own Next.js API route (HTTPS), which server-side calls the backend.
 
 1. API Route (Proxy): `pages/api/register.ts`
@@ -143,7 +142,7 @@ Solution: Call your own Next.js API route (HTTPS), which server-side calls the b
 ```ts
 import type { NextApiRequest, NextApiResponse } from "next";
 
-// Server-side proxy â€” avoids mixed content
+// Server-side proxy — avoids mixed content
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -282,3 +281,7 @@ Optional hardening (not enabled here):
 ## Writing Plugins
 
 See [Plugin Development](src/plugins/README.md).
+
+
+
+
