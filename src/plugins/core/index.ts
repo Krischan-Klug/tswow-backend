@@ -7,8 +7,10 @@ import rateLimit from "express-rate-limit";
 
 export const CorePlugin: ModulePlugin = {
   name: "core",
+  version: "1.0.0",
+  description: "Shared middleware, pools, and auth primitives used by other plugins.",
   // Core exports shared infra but registers no routes.
-  init(app) {
+  async init(app, _context) {
     // Security & performance
     app.use(helmet());
     app.use(compression());
@@ -60,3 +62,4 @@ export {
   getCharactersPool,
 } from "./db/pool.js";
 export { computeVerifierFor } from "./utils/srp.js";
+export { runPluginValidation } from "./validate-plugins.js";

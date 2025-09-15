@@ -1,0 +1,26 @@
+{
+  "core": {
+    "enabled": true,
+    "settings": {}
+  },
+  "auth": {
+    "enabled": true,
+    "settings": {}
+  },
+  "realm": {
+    "enabled": true,
+    "settings": {}
+  },
+  "sample": {
+    "enabled": true,
+    "settings": {}
+  },
+  "dev": {
+    "enabled": true,
+    "settings": {}
+  },
+  "character": {
+    "enabled": true,
+    "settings": {}
+  }
+}
