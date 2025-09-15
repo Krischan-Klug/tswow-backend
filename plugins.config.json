@@ -1,9 +1,17 @@
 {
+  "auth": {
+    "enabled": true,
+    "settings": {}
+  },
+  "character": {
+    "enabled": true,
+    "settings": {}
+  },
   "core": {
     "enabled": true,
     "settings": {}
   },
-  "auth": {
+  "dev": {
     "enabled": true,
     "settings": {}
   },
@@ -14,14 +22,5 @@
   "sample": {
     "enabled": true,
     "settings": {}
-  },
-  "dev": {
-    "enabled": true,
-    "settings": {}
-  },
-  "character": {
-    "enabled": true,
-    "settings": {}
   }
 }
-
