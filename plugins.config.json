@@ -1,6 +1,6 @@
 {
   "core": {
-    "enabled": true,
+    "enabled": false,
     "settings": {}
   },
   "auth": {

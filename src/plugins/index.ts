@@ -14,6 +14,8 @@ const CONFIG_FILE = path.resolve(process.cwd(), "plugins.config.json");
 const LEGACY_CONFIG_FILE = path.resolve(process.cwd(), "plugins.json");
 const pluginsDir = fileURLToPath(new URL("./", import.meta.url));
 
+const CORE_PLUGIN_NAME = "core";
+
 type NormalizedDependency = PluginDependency;
 
 interface PluginInfo {
@@ -141,6 +143,9 @@ async function discoverPlugins(): Promise<Record<string, PluginInfo>> {
     };
   }
 
+  if (!(CORE_PLUGIN_NAME in plugins)) {
+    throw new Error(`Required plugin '${CORE_PLUGIN_NAME}' was not discovered.`);
+  }
   return plugins;
 }
 
@@ -335,7 +340,28 @@ async function preparePlugins(): Promise<PluginAnalysis> {
   const names = Object.keys(plugins);
   const config = loadConfig(names);
   const order = topoSort(plugins);
-  return preparePlan(plugins, config, order);
+  const analysis = preparePlan(plugins, config, order);
+
+  const coreEntry = analysis.entries.find((entry) => entry.name === CORE_PLUGIN_NAME);
+  if (!coreEntry) {
+    throw new Error(
+      `Required plugin '${CORE_PLUGIN_NAME}' was not registered during planning.`
+    );
+  }
+
+  if (coreEntry.plan.status !== "enabled") {
+    const reason =
+      coreEntry.plan.status === "disabled"
+        ? "it is disabled in plugins.config.json"
+        : coreEntry.plan.issues.length
+        ? coreEntry.plan.issues.join("; ")
+        : "unresolved issues";
+    throw new Error(
+      `Required plugin '${CORE_PLUGIN_NAME}' must be enabled before the server can start: ${reason}.`
+    );
+  }
+
+  return analysis;
 }
 
 export async function planPlugins(): Promise<{
@@ -442,3 +468,4 @@ export default async function initPlugins(app: Express): Promise<void> {
     );
   }
 }
+
