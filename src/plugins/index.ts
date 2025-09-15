@@ -16,6 +16,155 @@ const pluginsDir = fileURLToPath(new URL("./", import.meta.url));
 
 const CORE_PLUGIN_NAME = "core";
 
+const DEV_LIFECYCLE = process.env.npm_lifecycle_event === "dev";
+const AUTO_SCAFFOLD_ENV = process.env.TSWOW_PLUGIN_AUTO_SCAFFOLD ?? "";
+const AUTO_SCAFFOLD_ENABLED =
+  DEV_LIFECYCLE ||
+  AUTO_SCAFFOLD_ENV.toLowerCase() === "1" ||
+  AUTO_SCAFFOLD_ENV.toLowerCase() === "true";
+
+let scaffoldWatcherStarted = false;
+
+function toPascalCase(value: string): string {
+  return value
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join("");
+}
+
+function writeFileSafe(target: string, content: string): void {
+  if (!fs.existsSync(target)) {
+    fs.writeFileSync(target, content, "utf8");
+  }
+}
+
+function maybeScaffoldPluginDirectory(pluginName: string): void {
+  if (!AUTO_SCAFFOLD_ENABLED) {
+    return;
+  }
+  const normalized = pluginName.trim();
+  if (!normalized) {
+    return;
+  }
+  const pluginPath = path.join(pluginsDir, normalized);
+  if (!fs.existsSync(pluginPath) || !fs.statSync(pluginPath).isDirectory()) {
+    return;
+  }
+  const indexPath = path.join(pluginPath, "index.ts");
+  const indexJsPath = path.join(pluginPath, "index.js");
+  if (fs.existsSync(indexPath) || fs.existsSync(indexJsPath)) {
+    return;
+  }
+
+  const pascal = toPascalCase(normalized) || "Plugin";
+  const pluginConst = `${pascal}Plugin`;
+  const routeHandler = `get${pascal}`;
+  const serviceFn = `get${pascal}Data`;
+  const description = `Auto-generated plugin '${normalized}'.`;
+
+  writeFileSafe(
+    indexPath,
+    `import type { ModulePlugin } from "../types.js";
+import routes from "./routes.js";
+
+export const ${pluginConst}: ModulePlugin = {
+  name: "${normalized}",
+  version: "0.1.0",
+  description: "${description}",
+  deps: [{ name: "core", range: "^1.0.0" }],
+  async init(app, _context) {
+    app.use("/${normalized}", routes);
+  },
+};
+
+export default ${pluginConst};
+
+export * from "./service.js";
+`
+  );
+
+  writeFileSafe(
+    path.join(pluginPath, "routes.ts"),
+    `import { Router } from "express";
+import { requireAuth } from "plugin-core";
+import { ${routeHandler} } from "./controller.js";
+
+const router = Router();
+
+router.get("/", requireAuth, ${routeHandler});
+
+export default router;
+`
+  );
+
+  writeFileSafe(
+    path.join(pluginPath, "controller.ts"),
+    `import type { Response } from "express";
+import type { AuthRequest } from "plugin-core";
+import { ${serviceFn} } from "./service.js";
+
+export async function ${routeHandler}(req: AuthRequest, res: Response): Promise<Response> {
+  const result = await ${serviceFn}(req.user?.id ?? null);
+  return res.json(result);
+}
+`
+  );
+
+  writeFileSafe(
+    path.join(pluginPath, "service.ts"),
+    `export interface ${pascal}Data {
+  message: string;
+  accountId: number | null;
+}
+
+export async function ${serviceFn}(accountId: number | null): Promise<${pascal}Data> {
+  return {
+    message: "Hello from ${normalized}!",
+    accountId,
+  };
+}
+`
+  );
+
+  console.log(
+    `Auto-scaffolded plugin '${normalized}' with starter files (index.ts, routes.ts, controller.ts, service.ts).`
+  );
+}
+
+function startPluginScaffoldWatcher(): void {
+  if (!AUTO_SCAFFOLD_ENABLED || scaffoldWatcherStarted) {
+    return;
+  }
+  scaffoldWatcherStarted = true;
+
+  try {
+    const watcher = fs.watch(pluginsDir, { persistent: true }, (eventType, entry) => {
+      if (eventType !== "rename" || !entry) {
+        return;
+      }
+      const pluginName = entry.toString();
+      setTimeout(() => {
+        try {
+          maybeScaffoldPluginDirectory(pluginName);
+        } catch (err) {
+          console.error(`Failed to scaffold plugin '${pluginName}':`, err);
+        }
+      }, 50);
+    });
+
+    watcher.on("error", (err) => {
+      console.error("Plugin scaffolder watcher error:", err);
+    });
+  } catch (err) {
+    console.error("Failed to initialize plugin scaffolder watcher:", err);
+  }
+}
+
+if (AUTO_SCAFFOLD_ENABLED) {
+  startPluginScaffoldWatcher();
+}
+
 type NormalizedDependency = PluginDependency;
 
 interface PluginInfo {
@@ -95,6 +244,8 @@ async function discoverPlugins(): Promise<Record<string, PluginInfo>> {
     if (!entry.isDirectory()) {
       continue;
     }
+
+    maybeScaffoldPluginDirectory(entry.name);
 
     const base = path.join(pluginsDir, entry.name, "index");
     let ext = "";
@@ -468,4 +619,6 @@ export default async function initPlugins(app: Express): Promise<void> {
     );
   }
 }
+
+
 
