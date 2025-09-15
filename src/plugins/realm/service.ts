@@ -25,3 +25,10 @@ export async function getPlayerCountById(id: number) {
   if ((rows as any[]).length === 0) return null;
   return (rows as any[])[0];
 }
+
+export async function getRealmlist() {
+  const [rows] = await authPool.execute(
+    "SELECT id, name, address, port FROM realmlist"
+  );
+  return rows as any[];
+}
