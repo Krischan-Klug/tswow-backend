@@ -1,16 +1,14 @@
-# TSWoW / TrinityCore Auth Backend (Node + Express + TypeScript + MySQL)
+# TSWoW Plugin Backend (Node + Express + TypeScript + MySQL)
 
-A small, modular TypeScript backend for account registration (SRP6) with room to grow (login, realms, characters, etc.).
-The frontend (Next.js or React) should call this backend via a server-side proxy to avoid mixed content.
+A modular, extensible backend with a plugin system for TSWoW/TrinityCore — authentication, realms, characters, and optional features (e.g., Casino) as cleanly separated modules.
 
 ---
 
 ## Features
 
 - TypeScript with strict typing
-- Modular plugin system with auto-discovery, per-plugin config, and dev-time scaffolding
-- Core plugin centralizes global middleware and shared utils/DB
-- Endpoints: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /realm/info`
+- Plugin system: auto-discovery, per-plugin config, dev-time auto scaffolding
+- `core` plugin centralizes middleware, DB pools, auth (JWT) and utilities
 - SRP6 (TrinityCore-compatible) account verification
 - MySQL connection pools (auth + realm-specific pools)
 - Security: helmet, compression, CORS, express-rate-limit (global and per-route)
@@ -22,53 +20,14 @@ The frontend (Next.js or React) should call this backend via a server-side proxy
 ### Architecture (simple)
 
 ```
-[Browser Form]
-   -> (POST /api/register)
-[Next.js API Route — Proxy]
-   -> (server-side fetch)
-[Backend /auth/register]
+[Browser / Frontend]
+   -> (proxy/API call)
+[Backend (Plugins)]
    ->
 [Controller] -> [Service] -> [DB Pool] -> [MySQL]
 
  Security: helmet, cors, compression, rate-limits
 ```
-
-### Plugin System
-
-Plugins live under `src/plugins/`. On startup the loader discovers every folder and writes/maintains a `plugins.config.json` file with per-plugin flags:
-
-```json
-{
-  "core": { "enabled": true, "settings": {} },
-  "auth": { "enabled": true, "settings": {} }
-}
-```
-
-Treat this file like environment state: it is regenerated when new plugins appear and should stay out of source control (already listed in `.gitignore`). Set `enabled` to `false` to skip a plugin locally or extend `settings` with plugin-specific configuration.
-
-Each plugin exposes a `ModulePlugin` from its `index.ts` with a unique `name`, a semantic `version`, optional `description`, and dependency list. Dependencies are version-aware (`{ name: "auth", range: "^1.0.0" }`) and the loader topologically sorts modules. The `core` plugin is mandatory; the server refuses to start if it is missing, disabled, or has unresolved issues.
-
-During `npm run dev` the loader watches the `src/plugins` directory. Creating a new folder auto-scaffolds a starter plugin (index/routes/controller/service) that already depends on `core` and exports placeholder handlers. Set `TSWOW_PLUGIN_AUTO_SCAFFOLD=true` to enable the same behaviour outside the dev script if needed.
-
-Inter-plugin imports:
-
-- Aliases are available for every plugin: `plugin-<folder>` maps to `src/plugins/<folder>/index.ts`.
-- Subpaths are supported: `plugin-<folder>/...` maps to files under that plugin.
-- Examples:
-  - `import { requireAuth } from "plugin-core";`
-  - `import { issueJwt } from "plugin-auth";`
-  - Keep the `.js` extension when importing non-index files (NodeNext ESM).
-\n\n### Core Plugin
-
-The `core` plugin sits at the base of the dependency graph and initializes global middleware in its `init(app)`.
-It also provides shared building blocks (e.g., auth guard, rate limiters, DB pools, SRP utilities) via a stable entry
-point so feature plugins don't need to know about app-level paths.
-
-Intended usage:
-
-- Feature plugins declare `deps: ["core"]` to ensure core runs first.
-- Feature plugins import what they need from `plugin-core`.
-- Keep cross-cutting concerns in `core` so feature plugins stay slim and focused on their domain.
 
 ---
 
@@ -76,14 +35,14 @@ Intended usage:
 
 ### Requirements
 
-- Node.js 18+ (recommend 20+)
-- MySQL/MariaDB with TrinityCore/TSWoW auth schema
+- Node.js 18+ (20+ recommended)
+- MySQL/MariaDB with TrinityCore/TSWoW auth/realm schema
 
 ### Backend Setup
 
 1. Install dependencies
 
-```bash
+```
 npm i
 ```
 
@@ -124,7 +83,7 @@ JWT_EXPIRES_IN=1d
 
 4. Run
 
-```bash
+```
 npm run dev     # watch mode
 # or
 npm run build && npm start
@@ -132,156 +91,163 @@ npm run build && npm start
 
 ---
 
-## Frontend (Next.js) — Proxy Setup
+## Plugin System
 
-Why: Your site runs on HTTPS, but the backend might be HTTP. Browsers block HTTPS → HTTP calls (mixed content).
-Solution: Call your own Next.js API route (HTTPS), which server-side calls the backend.
+Plugins live under `src/plugins/`. On startup the loader auto-discovers all plugins and maintains `plugins.config.json` (git-ignored) with enable flags and optional settings per plugin.
 
-1. API Route (Proxy): `pages/api/register.ts`
+Example:
 
-```ts
-import type { NextApiRequest, NextApiResponse } from "next";
-
-// Server-side proxy — avoids mixed content
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const upstream =
-    process.env.BACKEND_URL || "http://YOUR-SERVER-IP:3001/auth/register";
-
-  try {
-    const r = await fetch(upstream, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req.body),
-    });
-
-    const data = await r.json().catch(() => ({}));
-    return res.status(r.status).json(data);
-  } catch {
-    return res.status(502).json({ error: "Upstream not reachable" });
-  }
+```json
+{
+  "core": { "enabled": true, "settings": {} },
+  "auth": { "enabled": true, "settings": {} }
 }
 ```
 
-Optional in your Next.js project: `.env.local`
+Notes:
 
-```env
-BACKEND_URL=http://YOUR-SERVER-IP:3001/auth/register
-```
+- Set `enabled: false` to disable a plugin locally.
+- `settings` is a free-form bag for plugin-specific config and is passed to the plugin’s lifecycle context.
 
-2. Frontend page (example submit)
+Each plugin exports a `ModulePlugin` from its `index.ts` with `name`, `version`, optional `description`, and `deps`. Version ranges (e.g., `{ name: "auth", range: "^1.0.0" }`) are validated and load order is topologically sorted. The `core` plugin is required; the server will not start without it.
 
-```js
-await fetch("/api/register", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ username, password, email }), // email can be empty
-});
-```
+During `npm run dev` the loader watches `src/plugins`. Creating a new folder auto-scaffolds a starter plugin (`index.ts`, `routes.ts`, `controller.ts`, `service.ts`). Outside of dev: set `TSWOW_PLUGIN_AUTO_SCAFFOLD=true` to enable the same behavior.
 
-Note: Do not call `http://IP:3001` directly from the browser on an HTTPS page.
+Inter-plugin imports:
+
+- Alias per plugin: `plugin-<folder>` → `src/plugins/<folder>/index.ts`
+- Subpaths: `plugin-<folder>/...` → files within the plugin
+- Examples:
+  - `import { requireAuth } from "plugin-core";`
+  - `import { issueJwt } from "plugin-auth";`
+  - Keep `.js` extension for relative imports (NodeNext ESM)
+
+### Core Plugin
+
+Initializes global middleware (`helmet`, `compression`, JSON body parsing, `cors`, rate limits), sets `trust proxy`, and exports shared building blocks (JWT auth guard, rate limiters, DB pools, SRP utilities).
+
+Intended usage:
+
+- Feature plugins declare `deps: ["core"]`.
+- Import needed utilities from `plugin-core`.
+- Keep cross-cutting concerns in `core` so feature plugins stay focused.
+
+### Writing Plugins
+
+See [Plugin Development](src/plugins/README.md).
+
+---
+
+## Frontend Project
+
+This repository only covers the backend. For UI, flows, and proxy/HTTPS guidance, see the separate frontend project:
+
+- See [TSWoW Frontend](https://github.com/Krischan-Klug/tswow-frontend).
 
 ---
 
 ## Current API
 
-These endpoints are provided by plugins and are only available when their respective modules are enabled.
+These endpoints are provided by plugins and only available when their respective modules are enabled. A basic health check is always present.
 
-### POST /auth/register
+<details>
+  <summary><strong>App</strong> (core application)</summary>
 
-Create an account with SRP6 in the `auth.account` table.
+- GET <code>/health</code>
+  - Health check for the backend.
+  - Response: 200 <code>{ "ok": true }</code>
 
-Body
+</details>
 
-```json
-{ "username": "Foo", "password": "Bar", "email": "foo@bar.tld" }
-```
+<details>
+  <summary><strong>Auth Plugin</strong> (<code>/auth</code>)</summary>
 
-Responses
+- POST <code>/auth/register</code>
 
-- 201 { "message": "account created" }
-- 409 { "error": "username already exists" }
-- 400/500 on validation/internal errors
+  - Create an account (SRP6) in <code>auth.account</code>.
+  - Body: <code>{ "username": "Foo", "password": "Bar", "email": "foo@bar.tld" }</code>
+  - Responses: 201 created; 409 username exists; 400/500 on errors
 
-### POST /auth/login
+- POST <code>/auth/login</code>
 
-Verify a user's password using SRP6 (`salt` + `verifier`).
+  - Verify password via SRP6 (<code>salt</code> + <code>verifier</code>).
+  - Body: <code>{ "username": "Foo", "password": "Bar" }</code>
+  - Responses: 200 JWT + account; 401 invalid; 400/500 errors
 
-Body
+- GET <code>/auth/me</code>
+  - Return current user from <code>Authorization: Bearer &lt;JWT&gt;</code>.
+  - Responses: 200 account; 401 invalid token; 404 not found
 
-```json
-{ "username": "Foo", "password": "Bar" }
-```
+</details>
 
-Responses
+<details>
+  <summary><strong>Realm Plugin</strong> (<code>/realm</code>)</summary>
 
-- 200 { "token": "<JWT>", "account": { "id": 1, "username": "Foo", "email": "" } }
-- 401 { "error": "invalid credentials" }
-- 400/500 on validation/internal errors
+- POST <code>/realm/info</code>
+  - Retrieve realm info (from <code>realmlist</code>) and population.
+  - Body: <code>{ "id": 1 }</code>
+  - Responses: 200 info; 404 not found; 400/500 errors
 
-### GET /auth/me
+</details>
 
-Returns the current user's account based on the `Authorization: Bearer <JWT>` header.
+<details>
+  <summary><strong>Character Plugin</strong> (<code>/character</code>)</summary>
 
-Responses
+- POST <code>/character</code>
+  - List characters for the authenticated account, grouped by realm.
+  - Auth: required (<code>Bearer &lt;JWT&gt;</code>)
+  - Body: <code>{}</code>
+  - Response: 200 list; 401 unauthorized; 500 errors
 
-- 200 { "account": { "id": 1, "username": "Foo", "email": "", "SecurityLevel": 0 } }
-- 401 { "error": "invalid token" }
-- 404 { "error": "not found" }
+</details>
 
-### POST /realm/info
+<details>
+  <summary><strong>Casino Plugin</strong> (<code>/casino</code>)</summary>
 
-Retrieve a realm's basic information from `realmlist`.
+- GET <code>/casino/characters</code>
 
-Body
+  - List playable characters with balances per realm.
+  - Auth: required
+  - Response: 200 list; 401 unauthorized; 4xx/5xx on errors
 
-```json
-{ "id": 1 }
-```
+- POST <code>/casino/coin-flip</code>
+  - Place a coin-flip wager. Atomic balance update in characters DB.
+  - Auth: required
+  - Body: <code>{ "realmId": 1, "characterGuid": 123, "wagerCopper": 100, "choice": "heads" }</code>
+  - Notes: <code>choice</code> also accepts <code>kopf</code>/<code>zahl</code> (case-insensitive); <code>wagerCopper</code> must be a positive integer.
+  - Response: 200 result; Errors: 401 INVALID_ACCOUNT; 400 INVALID_WAGER/INSUFFICIENT_FUNDS/invalid choice; 404 CHARACTER_NOT_FOUND; 500 TRANSACTION_FAILED
 
-Responses
+</details>
 
-- 200 { "name": "My Realm", "address": "127.0.0.1:8085", "population": 1 }
-- 404 { "error": "no realm found" }
-- 400/500 on validation/internal errors
+<details>
+  <summary><strong>Dev Plugin</strong> (<code>/dev</code>)</summary>
+
+- GET <code>/dev</code>
+  - Diagnostics/dev route
+  - Response: 200 <code>{ "message": "DEV ACCESSED" }</code>
+
+</details>
 
 ---
 
 ## Security Notes
 
-- helmet for secure HTTP headers (global via Core plugin)
+- helmet for secure HTTP headers (global, via `core`)
 - compression for faster responses (global)
 - CORS: if `FRONTEND_ORIGIN` is set, only that origin is allowed; otherwise open
-- express-rate-limit: global limit plus dedicated limits for register/login (IPv6-safe keys)
-- trust proxy is set to `1` for operation behind reverse proxies / Cloudflare / IIS
-- No mixed content thanks to the Next.js proxy
+- express-rate-limit: global plus dedicated limits for register/login (IPv6-safe keys)
+- `trust proxy` set to `1` for operation behind reverse proxies / Cloudflare / IIS
 
-Optional hardening (not enabled here):
+Optional hardening (not enabled by default):
 
-- Add a shared x-api-key between Next.js proxy and backend.
-- Put the backend behind HTTPS (Caddy/IIS/Nginx) if you prefer TLS end-to-end.
+- Use a shared `x-api-key` between frontend proxy and backend
+- Run the backend behind HTTPS (Caddy/IIS/Nginx) for end-to-end TLS
 
 ---
 
 ## Troubleshooting
 
-- Mixed Content: Use `/api/register` (proxy) instead of calling `http://...` from the browser.
-- IPv6 warning in rate-limit: Use `ipKeyGenerator(req)` (already implemented).
-- ER_BAD_FIELD_ERROR (1054): Ensure `account` uses `salt` + `verifier` (not legacy `sha_pass_hash`).
-- Port unreachable: Open TCP port in your firewall if needed (e.g., 3001).
-
----
-
-## Writing Plugins
-
-See [Plugin Development](src/plugins/README.md).
-
-
-
-
+- Mixed Content: see the frontend project for proxy/HTTPS details
+- IPv6 warning in rate-limit: use `ipKeyGenerator(req)` (already implemented)
+- ER_BAD_FIELD_ERROR (1054): make sure `account` uses `salt` + `verifier` (not legacy `sha_pass_hash`)
+- Port unreachable: open the TCP port in your firewall (e.g., 3001)
