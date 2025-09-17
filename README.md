@@ -1,17 +1,17 @@
 # TSWoW Plugin Backend (Node + Express + TypeScript + MySQL)
 
-Modulares, erweiterbares Backend mit Plugin-System für TSWoW/TrinityCore – Authentifizierung, Realms, Charaktere und optionale Features (z. B. Casino) über klar abgegrenzte Module.
+A modular, extensible backend with a plugin system for TSWoW/TrinityCore — authentication, realms, characters, and optional features (e.g., Casino) as cleanly separated modules.
 
 ---
 
 ## Features
 
-- TypeScript mit striktem Typing
-- Plugin-System: Auto-Discovery, per-Plugin-Konfiguration, Dev-Auto-Scaffolding
-- `core`-Plugin bündelt Middleware, DB-Pools, Auth (JWT) und Utilities
-- SRP6 (TrinityCore-kompatibel) für Account-Verifikation
-- MySQL Connection-Pools (Auth + realm-spezifische Pools)
-- Security: helmet, compression, CORS, express-rate-limit (global und per-Route)
+- TypeScript with strict typing
+- Plugin system: auto-discovery, per-plugin config, dev-time auto scaffolding
+- `core` plugin centralizes middleware, DB pools, auth (JWT) and utilities
+- SRP6 (TrinityCore-compatible) account verification
+- MySQL connection pools (auth + realm-specific pools)
+- Security: helmet, compression, CORS, express-rate-limit (global and per-route)
 
 ---
 
@@ -21,7 +21,7 @@ Modulares, erweiterbares Backend mit Plugin-System für TSWoW/TrinityCore – Au
 
 ```
 [Browser / Frontend]
-   -> (Proxy/API Call)
+   -> (proxy/API call)
 [Backend (Plugins)]
    ->
 [Controller] -> [Service] -> [DB Pool] -> [MySQL]
@@ -35,18 +35,18 @@ Modulares, erweiterbares Backend mit Plugin-System für TSWoW/TrinityCore – Au
 
 ### Requirements
 
-- Node.js 18+ (empfohlen 20+)
-- MySQL/MariaDB mit TrinityCore/TSWoW Auth-/Realm-Schema
+- Node.js 18+ (20+ recommended)
+- MySQL/MariaDB with TrinityCore/TSWoW auth/realm schema
 
 ### Backend Setup
 
-1. Dependencies installieren
+1. Install dependencies
 
 ```
 npm i
 ```
 
-2. Environment-Variablen (`.env` – Vorlage `.env.example`)
+2. Environment variables (`.env` — use `.env.example` as a template)
 
 ```env
 PORT=3001
@@ -55,7 +55,7 @@ JWT_SECRET=change_this_to_a_long_random_string
 JWT_EXPIRES_IN=1d
 ```
 
-3. Datenbank-Konfiguration (`db.json` – Vorlage `db.example.json`)
+3. Database configuration (`db.json` — copy from `db.example.json`)
 
 ```json
 {
@@ -81,11 +81,11 @@ JWT_EXPIRES_IN=1d
 }
 ```
 
-4. Starten
+4. Run
 
 ```
 npm run dev     # watch mode
-# oder
+# or
 npm run build && npm start
 ```
 
@@ -93,9 +93,9 @@ npm run build && npm start
 
 ## Plugin System
 
-Plugins liegen unter `src/plugins/`. Beim Start werden alle Plugins automatisch entdeckt; die Datei `plugins.config.json` hält Enable-Flags und optionale Settings pro Plugin fest (liegt bereits in `.gitignore`).
+Plugins live under `src/plugins/`. On startup the loader auto-discovers all plugins and maintains `plugins.config.json` (git-ignored) with enable flags and optional settings per plugin.
 
-Beispiel-Konfiguration:
+Example:
 
 ```json
 {
@@ -104,221 +104,150 @@ Beispiel-Konfiguration:
 }
 ```
 
-Hinweise:
+Notes:
 
-- `enabled:false` deaktiviert ein Plugin lokal.
-- `settings` ist frei für plugin-spezifische Konfiguration.
+- Set `enabled: false` to disable a plugin locally.
+- `settings` is a free-form bag for plugin-specific config and is passed to the plugin’s lifecycle context.
 
-Jedes Plugin exportiert ein `ModulePlugin` aus `index.ts` mit `name`, `version`, optionaler `description` und `deps`. Versionsbereiche (z. B. `{ name: "auth", range: "^1.0.0" }`) werden geprüft und die Lade-Reihenfolge wird topologisch bestimmt. Das `core`-Plugin ist Pflicht; ohne aktiviertes `core` startet der Server nicht.
+Each plugin exports a `ModulePlugin` from its `index.ts` with `name`, `version`, optional `description`, and `deps`. Version ranges (e.g., `{ name: "auth", range: "^1.0.0" }`) are validated and load order is topologically sorted. The `core` plugin is required; the server will not start without it.
 
-Während `npm run dev` beobachtet der Loader `src/plugins`. Das Anlegen eines Ordners scaffoldet automatisch ein Start-Plugin (`index.ts`, `routes.ts`, `controller.ts`, `service.ts`). Außerhalb von `dev`: `TSWOW_PLUGIN_AUTO_SCAFFOLD=true` setzen.
+During `npm run dev` the loader watches `src/plugins`. Creating a new folder auto-scaffolds a starter plugin (`index.ts`, `routes.ts`, `controller.ts`, `service.ts`). Outside of dev: set `TSWOW_PLUGIN_AUTO_SCAFFOLD=true` to enable the same behavior.
 
-Inter-Plugin-Imports:
+Inter-plugin imports:
 
-- Alias je Plugin: `plugin-<folder>` → `src/plugins/<folder>/index.ts`
-- Subpaths: `plugin-<folder>/...` → Dateien innerhalb des Plugins
-- Beispiele:
+- Alias per plugin: `plugin-<folder>` → `src/plugins/<folder>/index.ts`
+- Subpaths: `plugin-<folder>/...` → files within the plugin
+- Examples:
   - `import { requireAuth } from "plugin-core";`
   - `import { issueJwt } from "plugin-auth";`
-  - Bei relativen Imports `.js`-Endung beibehalten (NodeNext ESM)
+  - Keep `.js` extension for relative imports (NodeNext ESM)
 
 ### Core Plugin
 
-Initialisiert globale Middleware (`helmet`, `compression`, `json`, `cors`, Rate-Limits), setzt `trust proxy` und exportiert gemeinsame Bausteine (Auth-Guard/JWT, Rate-Limiter, DB-Pools, SRP-Utilities). Feature-Plugins hängen sich daran auf.
+Initializes global middleware (`helmet`, `compression`, JSON body parsing, `cors`, rate limits), sets `trust proxy`, and exports shared building blocks (JWT auth guard, rate limiters, DB pools, SRP utilities).
 
-Empfohlene Nutzung:
+Intended usage:
 
-- Feature-Plugins deklarieren `deps: ["core"]`.
-- Benötigte Utilities via `plugin-core` importieren.
-- Querschnittsthemen in `core` halten – Feature-Plugins bleiben schlank.
+- Feature plugins declare `deps: ["core"]`.
+- Import needed utilities from `plugin-core`.
+- Keep cross-cutting concerns in `core` so feature plugins stay focused.
 
 ### Writing Plugins
 
-Siehe `src/plugins/README.md` für eine ausführliche Anleitung.
+See [Plugin Development](src/plugins/README.md).
 
 ---
 
-## Frontend
+## Frontend Project
 
-Das Frontend ist ein separates Projekt. Bitte siehe das TSWoW Frontend für Implementierungsdetails, UX sowie Proxy/HTTPS-Hinweise. So vermeiden wir doppelte Dokumentation.
+This repository only covers the backend. For UI, flows, and proxy/HTTPS guidance, see the separate frontend project:
+
+- See [TSWoW Frontend](https://github.com/Krischan-Klug/tswow-frontend).
 
 ---
 
 ## Current API
 
-Diese Endpoints kommen von Plugins und sind nur verfügbar, wenn die jeweiligen Module aktiviert sind. Basis-Gesundheitscheck ist immer vorhanden.
+These endpoints are provided by plugins and only available when their respective modules are enabled. A basic health check is always present.
 
-### GET /health
+<details>
+  <summary><strong>App</strong> (core application)</summary>
 
-Gesundheitscheck des Backends.
+- GET <code>/health</code>
+  - Health check for the backend.
+  - Response: 200 <code>{ "ok": true }</code>
 
-Response
+</details>
 
-- 200 `{ "ok": true }`
+<details>
+  <summary><strong>Auth Plugin</strong> (<code>/auth</code>)</summary>
 
-### POST /auth/register
+- POST <code>/auth/register</code>
 
-Erstellt einen Account (SRP6) in der `auth.account` Tabelle.
+  - Create an account (SRP6) in <code>auth.account</code>.
+  - Body: <code>{ "username": "Foo", "password": "Bar", "email": "foo@bar.tld" }</code>
+  - Responses: 201 created; 409 username exists; 400/500 on errors
 
-Body
+- POST <code>/auth/login</code>
 
-```json
-{ "username": "Foo", "password": "Bar", "email": "foo@bar.tld" }
-```
+  - Verify password via SRP6 (<code>salt</code> + <code>verifier</code>).
+  - Body: <code>{ "username": "Foo", "password": "Bar" }</code>
+  - Responses: 200 JWT + account; 401 invalid; 400/500 errors
 
-Responses
+- GET <code>/auth/me</code>
+  - Return current user from <code>Authorization: Bearer &lt;JWT&gt;</code>.
+  - Responses: 200 account; 401 invalid token; 404 not found
 
-- 201 `{ "message": "account created" }`
-- 409 `{ "error": "username already exists" }`
-- 400/500 bei Validierungs-/internen Fehlern
+</details>
 
-### POST /auth/login
+<details>
+  <summary><strong>Realm Plugin</strong> (<code>/realm</code>)</summary>
 
-Passwortprüfung via SRP6 (`salt` + `verifier`).
+- POST <code>/realm/info</code>
+  - Retrieve realm info (from <code>realmlist</code>) and population.
+  - Body: <code>{ "id": 1 }</code>
+  - Responses: 200 info; 404 not found; 400/500 errors
 
-Body
+</details>
 
-```json
-{ "username": "Foo", "password": "Bar" }
-```
+<details>
+  <summary><strong>Character Plugin</strong> (<code>/character</code>)</summary>
 
-Responses
+- POST <code>/character</code>
+  - List characters for the authenticated account, grouped by realm.
+  - Auth: required (<code>Bearer &lt;JWT&gt;</code>)
+  - Body: <code>{}</code>
+  - Response: 200 list; 401 unauthorized; 500 errors
 
-- 200 `{ "token": "<JWT>", "account": { "id": 1, "username": "Foo", "email": "" } }`
-- 401 `{ "error": "invalid credentials" }`
-- 400/500 bei Validierungs-/internen Fehlern
+</details>
 
-### GET /auth/me
+<details>
+  <summary><strong>Casino Plugin</strong> (<code>/casino</code>)</summary>
 
-Liefert den aktuellen Account basierend auf `Authorization: Bearer <JWT>`.
+- GET <code>/casino/characters</code>
 
-Responses
+  - List playable characters with balances per realm.
+  - Auth: required
+  - Response: 200 list; 401 unauthorized; 4xx/5xx on errors
 
-- 200 `{ "account": { "id": 1, "username": "Foo", "email": "", "SecurityLevel": 0 } }`
-- 401 `{ "error": "invalid token" }`
-- 404 `{ "error": "not found" }`
+- POST <code>/casino/coin-flip</code>
+  - Place a coin-flip wager. Atomic balance update in characters DB.
+  - Auth: required
+  - Body: <code>{ "realmId": 1, "characterGuid": 123, "wagerCopper": 100, "choice": "heads" }</code>
+  - Notes: <code>choice</code> also accepts <code>kopf</code>/<code>zahl</code> (case-insensitive); <code>wagerCopper</code> must be a positive integer.
+  - Response: 200 result; Errors: 401 INVALID_ACCOUNT; 400 INVALID_WAGER/INSUFFICIENT_FUNDS/invalid choice; 404 CHARACTER_NOT_FOUND; 500 TRANSACTION_FAILED
 
-### POST /realm/info
+</details>
 
-Liest Basisinfos eines Realms aus `realmlist` (plus Population aus Characters-DB).
+<details>
+  <summary><strong>Dev Plugin</strong> (<code>/dev</code>)</summary>
 
-Body
+- GET <code>/dev</code>
+  - Diagnostics/dev route
+  - Response: 200 <code>{ "message": "DEV ACCESSED" }</code>
 
-```json
-{ "id": 1 }
-```
-
-Responses
-
-- 200 `{ "name": "My Realm", "address": "127.0.0.1:8085", "population": 1 }`
-- 404 `{ "error": "no realm found" }`
-- 400/500 bei Validierungs-/internen Fehlern
-
-### POST /character
-
-Listet Charaktere des authentifizierten Accounts je Realm.
-
-Auth: erforderlich (`Authorization: Bearer <JWT>`)
-
-Body
-
-```json
-{}
-```
-
-Response
-
-- 200 `{ "characters": [ { "serverId": 1, "serverName": "<name>", "characters": [ { "guid": 1, "name": "<char>", "money": 0, "xp": 0, "level": 1 } ] } ] }`
-- 401 bei fehlender Auth
-- 500 bei internen Fehlern
-
-### GET /casino/characters
-
-Listet spielbare Charaktere pro Realm mit Kontostand (Kupfer und aufgeschlüsselt in Gold/Silber/Kupfer).
-
-Auth: erforderlich
-
-Response
-
-- 200 `{ "characters": [ { "realmId": 1, "realmName": "<name>", "guid": 123, "name": "<char>", "balanceCopper": 12345, "balancePretty": { "gold": 1, "silver": 23, "copper": 45 } } ] }`
-- 401 bei fehlender Auth
-- 4xx/5xx bei Service-Fehlern
-
-### POST /casino/coin-flip
-
-Platziert eine Münzwurf-Wette auf einen Charakter. Gewinn/Verlust wird atomar in der Character-DB verbucht.
-
-Auth: erforderlich
-
-Body
-
-```json
-{ "realmId": 1, "characterGuid": 123, "wagerCopper": 100, "choice": "heads" }
-```
-
-Hinweis: `choice` akzeptiert auch `kopf/zahl` (case-insensitive). `wagerCopper` muss eine positive Ganzzahl sein (Kupfer).
-
-Response
-
-- 200 `{ "result": { "realmId": 1, "characterGuid": 123, "choice": "heads", "outcome": "tails", "win": false, "wagerCopper": 100, "previousBalance": 1000, "balanceChange": -100, "updatedBalance": 900, "previousBalancePretty": { ... }, "updatedBalancePretty": { ... } } }`
-
-Fehler
-
-- 401 Unauthorized / `INVALID_ACCOUNT`
-- 400 `INVALID_WAGER` oder `INSUFFICIENT_FUNDS`
-- 404 `CHARACTER_NOT_FOUND`
-- 400 bei ungültiger Wahl (`choice`)
-- 500 `TRANSACTION_FAILED`
-
-### GET /sample
-
-Beispielroute (nur zu Demonstrationszwecken).
-
-Auth: erforderlich
-
-Query
-
-- `id` (optional, Realm-Id; Default 1)
-
-Response
-
-- 200 `{ "user": "<username>", "realmId": 1, "message": "..." }`
-
-### GET /dev
-
-Diagnostics/Dev-Route.
-
-Response
-
-- 200 `{ "message": "DEV ACCESSED" }`
+</details>
 
 ---
 
 ## Security Notes
 
-- helmet für sichere HTTP-Header (global, via `core`)
-- compression für schnellere Antworten (global)
-- CORS: wenn `FRONTEND_ORIGIN` gesetzt ist, wird nur diese Origin erlaubt; sonst offen
-- express-rate-limit: global und speziell für Register/Login (IPv6-sichere Keys)
-- `trust proxy` = `1` für Betrieb hinter Reverse Proxies / Cloudflare / IIS
+- helmet for secure HTTP headers (global, via `core`)
+- compression for faster responses (global)
+- CORS: if `FRONTEND_ORIGIN` is set, only that origin is allowed; otherwise open
+- express-rate-limit: global plus dedicated limits for register/login (IPv6-safe keys)
+- `trust proxy` set to `1` for operation behind reverse proxies / Cloudflare / IIS
 
-Optionale Härtung (nicht standardmäßig aktiviert):
+Optional hardening (not enabled by default):
 
-- Gemeinsamen `x-api-key` zwischen Frontend-Proxy und Backend verwenden.
-- Backend hinter HTTPS (Caddy/IIS/Nginx) betreiben für TLS End-to-End.
+- Use a shared `x-api-key` between frontend proxy and backend
+- Run the backend behind HTTPS (Caddy/IIS/Nginx) for end-to-end TLS
 
 ---
 
 ## Troubleshooting
 
-- Mixed Content: Bitte Frontend-Projekt beachten (Proxy/HTTPS erklärt dort).
-- IPv6-Warnung bei rate-limit: `ipKeyGenerator(req)` verwenden (bereits implementiert).
-- ER_BAD_FIELD_ERROR (1054): `account` muss `salt` + `verifier` nutzen (nicht legacy `sha_pass_hash`).
-- Port nicht erreichbar: Firewall-Port öffnen (z. B. 3001).
-
----
-
-## Links
-
-- Plugin-Entwicklung: `src/plugins/README.md`
-
+- Mixed Content: see the frontend project for proxy/HTTPS details
+- IPv6 warning in rate-limit: use `ipKeyGenerator(req)` (already implemented)
+- ER_BAD_FIELD_ERROR (1054): make sure `account` uses `salt` + `verifier` (not legacy `sha_pass_hash`)
+- Port unreachable: open the TCP port in your firewall (e.g., 3001)
