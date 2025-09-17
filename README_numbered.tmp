@@ -1,0 +1,244 @@
+001	# TSWoW / TrinityCore Auth Backend (Node + Express + TypeScript + MySQL)
+002	
+003	A small, modular TypeScript backend for account registration (SRP6) with room to grow (login, realms, characters, etc.).
+004	The frontend (Next.js or React) should call this backend via a server-side proxy to avoid mixed content.
+005	
+006	---
+007	
+008	## Features
+009	
+010	- TypeScript with strict typing
+011	- Modular plugin system with auto-discovery, per-plugin config, and dev-time scaffolding
+012	- Core plugin centralizes global middleware and shared utils/DB
+013	- Endpoints: `POST /auth/register`, `POST /auth/login`, `GET /auth/me`, `POST /realm/info`
+014	- SRP6 (TrinityCore-compatible) account verification
+015	- MySQL connection pools (auth + realm-specific pools)
+016	- Security: helmet, compression, CORS, express-rate-limit (global and per-route)
+017	
+018	---
+019	
+020	## Concept
+021	
+022	### Architecture (simple)
+023	
+024	```
+025	[Browser Form]
+026	   -> (POST /api/register)
+027	[Next.js API Route — Proxy]
+028	   -> (server-side fetch)
+029	[Backend /auth/register]
+030	   ->
+031	[Controller] -> [Service] -> [DB Pool] -> [MySQL]
+032	
+033	 Security: helmet, cors, compression, rate-limits
+034	```
+035	
+036	### Plugin System
+037	
+038	Plugins live under `src/plugins/`. On startup the loader discovers every folder and writes/maintains a `plugins.config.json` file with per-plugin flags:
+039	
+040	```json
+045	```
+046	
+047	Treat this file like environment state: it is regenerated when new plugins appear and should stay out of source control (already listed in `.gitignore`). Set `enabled` to `false` to skip a plugin locally or extend `settings` with plugin-specific configuration.
+048	
+050	
+051	During `npm run dev` the loader watches the `src/plugins` directory. Creating a new folder auto-scaffolds a starter plugin (index/routes/controller/service) that already depends on `core` and exports placeholder handlers. Set `TSWOW_PLUGIN_AUTO_SCAFFOLD=true` to enable the same behaviour outside the dev script if needed.
+052	
+053	Inter-plugin imports:
+054	
+055	- Aliases are available for every plugin: `plugin-<folder>` maps to `src/plugins/<folder>/index.ts`.
+056	- Subpaths are supported: `plugin-<folder>/...` maps to files under that plugin.
+057	- Examples:
+060	  - Keep the `.js` extension when importing non-index files (NodeNext ESM).
+061	\n\n### Core Plugin
+062	
+063	The `core` plugin sits at the base of the dependency graph and initializes global middleware in its `init(app)`.
+064	It also provides shared building blocks (e.g., auth guard, rate limiters, DB pools, SRP utilities) via a stable entry
+065	point so feature plugins don't need to know about app-level paths.
+066	
+067	Intended usage:
+068	
+069	- Feature plugins declare `deps: ["core"]` to ensure core runs first.
+070	- Feature plugins import what they need from `plugin-core`.
+071	- Keep cross-cutting concerns in `core` so feature plugins stay slim and focused on their domain.
+072	
+073	---
+074	
+075	## Setup
+076	
+077	### Requirements
+078	
+079	- Node.js 18+ (recommend 20+)
+080	- MySQL/MariaDB with TrinityCore/TSWoW auth schema
+081	
+082	### Backend Setup
+083	
+084	1. Install dependencies
+085	
+086	```bash
+087	npm i
+088	```
+089	
+090	2. Environment variables (`.env` — use `.env.example` as a template)
+091	
+092	```env
+093	PORT=3001
+094	FRONTEND_ORIGIN=http://localhost:3000
+095	JWT_SECRET=change_this_to_a_long_random_string
+096	JWT_EXPIRES_IN=1d
+097	```
+098	
+099	3. Database configuration (`db.json` — copy from `db.example.json`)
+100	
+101	```json
+104	    "host": "127.0.0.1",
+105	    "port": 3306,
+106	    "user": "tswow",
+107	    "password": "password",
+108	    "database": "auth"
+110	  "realms": [
+112	      "id": 1,
+113	      "host": "127.0.0.1",
+114	      "port": 3306,
+115	      "user": "tswow",
+116	      "password": "password",
+117	      "worldDest": "world.dest",
+118	      "worldSource": "world.source",
+119	      "characters": "characters"
+121	  ]
+123	```
+124	
+125	4. Run
+126	
+127	```bash
+128	npm run dev     # watch mode
+129	# or
+130	npm run build && npm start
+131	```
+132	
+133	---
+134	
+135	## Frontend (Next.js) — Proxy Setup
+136	
+137	Why: Your site runs on HTTPS, but the backend might be HTTP. Browsers block HTTPS → HTTP calls (mixed content).
+138	Solution: Call your own Next.js API route (HTTPS), which server-side calls the backend.
+139	
+140	1. API Route (Proxy): `pages/api/register.ts`
+141	
+142	```ts
+144	
+145	// Server-side proxy — avoids mixed content
+146	export default async function handler(
+147	  req: NextApiRequest,
+148	  res: NextApiResponse
+153	
+154	  const upstream =
+155	    process.env.BACKEND_URL || "http://YOUR-SERVER-IP:3001/auth/register";
+156	
+159	      method: "POST",
+161	      body: JSON.stringify(req.body),
+163	
+165	    return res.status(r.status).json(data);
+170	```
+171	
+172	Optional in your Next.js project: `.env.local`
+173	
+174	```env
+175	BACKEND_URL=http://YOUR-SERVER-IP:3001/auth/register
+176	```
+177	
+178	2. Frontend page (example submit)
+179	
+180	```js
+182	  method: "POST",
+186	```
+187	
+188	Note: Do not call `http://IP:3001` directly from the browser on an HTTPS page.
+189	
+190	---
+191	
+192	## Current API
+193	
+194	These endpoints are provided by plugins and are only available when their respective modules are enabled.
+195	
+196	### POST /auth/register
+197	
+198	Create an account with SRP6 in the `auth.account` table.
+199	
+200	Body
+201	
+202	```json
+204	```
+205	
+206	Responses
+207	
+210	- 400/500 on validation/internal errors
+211	
+212	### POST /auth/login
+213	
+214	Verify a user's password using SRP6 (`salt` + `verifier`).
+215	
+216	Body
+217	
+218	```json
+220	```
+221	
+222	Responses
+223	
+226	- 400/500 on validation/internal errors
+227	
+228	### GET /auth/me
+229	
+230	Returns the current user's account based on the `Authorization: Bearer <JWT>` header.
+231	
+232	Responses
+233	
+237	
+238	### POST /realm/info
+239	
+240	Retrieve a realm's basic information from `realmlist`.
+241	
+242	Body
+243	
+244	```json
+246	```
+247	
+248	Responses
+249	
+252	- 400/500 on validation/internal errors
+253	
+254	---
+255	
+256	## Security Notes
+257	
+258	- helmet for secure HTTP headers (global via Core plugin)
+259	- compression for faster responses (global)
+260	- CORS: if `FRONTEND_ORIGIN` is set, only that origin is allowed; otherwise open
+261	- express-rate-limit: global limit plus dedicated limits for register/login (IPv6-safe keys)
+262	- trust proxy is set to `1` for operation behind reverse proxies / Cloudflare / IIS
+263	- No mixed content thanks to the Next.js proxy
+264	
+265	Optional hardening (not enabled here):
+266	
+267	- Add a shared x-api-key between Next.js proxy and backend.
+268	- Put the backend behind HTTPS (Caddy/IIS/Nginx) if you prefer TLS end-to-end.
+269	
+270	---
+271	
+272	## Troubleshooting
+273	
+274	- Mixed Content: Use `/api/register` (proxy) instead of calling `http://...` from the browser.
+275	- IPv6 warning in rate-limit: Use `ipKeyGenerator(req)` (already implemented).
+276	- ER_BAD_FIELD_ERROR (1054): Ensure `account` uses `salt` + `verifier` (not legacy `sha_pass_hash`).
+277	- Port unreachable: Open TCP port in your firewall if needed (e.g., 3001).
+278	
+279	---
+280	
+281	## Writing Plugins
+282	
+283	See [Plugin Development](src/plugins/README.md).
+284	
+285	
+286	
+287	

@@ -1,0 +1,81 @@
+> ### Plugin System
+  
+  Plugins live under `src/plugins/`. On startup the loader discovers every folder and writes/maintains a `plugins.config.json` file with per-plugin flags:
+  
+  ```json
+  {
+    "core": { "enabled": true, "settings": {} },
+    "auth": { "enabled": true, "settings": {} }
+  }
+  ```
+  
+  Treat this file like environment state: it is regenerated when new plugins appear and should stay out of source control (already listed in `.gitignore`). Set `enabled` to `false` to skip a plugin locally or extend `settings` with plugin-specific configuration.
+  
+  Each plugin exposes a `ModulePlugin` from its `index.ts` with a unique `name`, a semantic `version`, optional `description`, and dependency list. Dependencies are version-aware (`{ name: "auth", range: "^1.0.0" }`) and the loader topologically sorts modules. The `core` plugin is mandatory; the server refuses to start if it is missing, disabled, or has unresolved issues.
+  
+  During `npm run dev` the loader watches the `src/plugins` directory. Creating a new folder auto-scaffolds a starter plugin (index/routes/controller/service) that already depends on `core` and exports placeholder handlers. Set `TSWOW_PLUGIN_AUTO_SCAFFOLD=true` to enable the same behaviour outside the dev script if needed.
+  
+  Inter-plugin imports:
+  
+  - Aliases are available for every plugin: `plugin-<folder>` maps to `src/plugins/<folder>/index.ts`.
+  - Subpaths are supported: `plugin-<folder>/...` maps to files under that plugin.
+  - Examples:
+    - `import { requireAuth } from "plugin-core";`
+    - `import { issueJwt } from "plugin-auth";`
+    - Keep the `.js` extension when importing non-index files (NodeNext ESM).
+  \n\n### Core Plugin
+  
+  The `core` plugin sits at the base of the dependency graph and initializes global middleware in its `init(app)`.
+  It also provides shared building blocks (e.g., auth guard, rate limiters, DB pools, SRP utilities) via a stable entry
+  point so feature plugins don't need to know about app-level paths.
+  
+  Intended usage:
+  
+  - Feature plugins declare `deps: ["core"]` to ensure core runs first.
+  - Feature plugins import what they need from `plugin-core`.
+  - Keep cross-cutting concerns in `core` so feature plugins stay slim and focused on their domain.
+  
+  ---
+  
+  ## Setup
+  
+
+Plugins live under `src/plugins/`. On startup the loader discovers every folder and writes/maintains a `plugins.config.json` file with per-plugin flags:
+
+```json
+{
+  "core": { "enabled": true, "settings": {} },
+  "auth": { "enabled": true, "settings": {} }
+}
+```
+
+Treat this file like environment state: it is regenerated when new plugins appear and should stay out of source control (already listed in `.gitignore`). Set `enabled` to `false` to skip a plugin locally or extend `settings` with plugin-specific configuration.
+
+Each plugin exposes a `ModulePlugin` from its `index.ts` with a unique `name`, a semantic `version`, optional `description`, and dependency list. Dependencies are version-aware (`{ name: "auth", range: "^1.0.0" }`) and the loader topologically sorts modules. The `core` plugin is mandatory; the server refuses to start if it is missing, disabled, or has unresolved issues.
+
+During `npm run dev` the loader watches the `src/plugins` directory. Creating a new folder auto-scaffolds a starter plugin (index/routes/controller/service) that already depends on `core` and exports placeholder handlers. Set `TSWOW_PLUGIN_AUTO_SCAFFOLD=true` to enable the same behaviour outside the dev script if needed.
+
+Inter-plugin imports:
+
+- Aliases are available for every plugin: `plugin-<folder>` maps to `src/plugins/<folder>/index.ts`.
+- Subpaths are supported: `plugin-<folder>/...` maps to files under that plugin.
+- Examples:
+  - `import { requireAuth } from "plugin-core";`
+  - `import { issueJwt } from "plugin-auth";`
+  - Keep the `.js` extension when importing non-index files (NodeNext ESM).
+\n\n### Core Plugin
+
+The `core` plugin sits at the base of the dependency graph and initializes global middleware in its `init(app)`.
+It also provides shared building blocks (e.g., auth guard, rate limiters, DB pools, SRP utilities) via a stable entry
+point so feature plugins don't need to know about app-level paths.
+
+Intended usage:
+
+- Feature plugins declare `deps: ["core"]` to ensure core runs first.
+- Feature plugins import what they need from `plugin-core`.
+- Keep cross-cutting concerns in `core` so feature plugins stay slim and focused on their domain.
+
+---
+
+## Setup
+
