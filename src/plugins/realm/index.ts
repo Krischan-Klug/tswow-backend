@@ -15,3 +15,4 @@ export default RealmPlugin;
 
 // Re-export service layer for external plugin consumption
 export * from "./service.js";
+export * from "./types.js";

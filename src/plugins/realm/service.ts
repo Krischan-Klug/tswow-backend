@@ -1,9 +1,5 @@
 import { authPool, getCharactersPool } from "plugin-core";
-
-export interface Realm {
-  name: string;
-  address: string;
-}
+import type { Realm } from "./types.js";
 
 export async function getRealmById(id: number): Promise<Realm | null> {
   const [rows] = await authPool.execute(

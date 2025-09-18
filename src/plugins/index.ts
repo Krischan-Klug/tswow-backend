@@ -81,6 +81,7 @@ export const ${pluginConst}: ModulePlugin = {
 export default ${pluginConst};
 
 export * from "./service.js";
+export * from "./types.js";
 `
   );
 
@@ -112,11 +113,17 @@ export async function ${routeHandler}(req: AuthRequest, res: Response): Promise<
   );
 
   writeFileSafe(
-    path.join(pluginPath, "service.ts"),
+    path.join(pluginPath, "types.ts"),
     `export interface ${pascal}Data {
   message: string;
   accountId: number | null;
 }
+`
+  );
+
+  writeFileSafe(
+    path.join(pluginPath, "service.ts"),
+    `import type { ${pascal}Data } from "./types.js";
 
 export async function ${serviceFn}(accountId: number | null): Promise<${pascal}Data> {
   return {
@@ -128,7 +135,7 @@ export async function ${serviceFn}(accountId: number | null): Promise<${pascal}D
   );
 
   console.log(
-    `Auto-scaffolded plugin '${normalized}' with starter files (index.ts, routes.ts, controller.ts, service.ts).`
+    `Auto-scaffolded plugin '${normalized}' with starter files (index.ts, routes.ts, controller.ts, service.ts, types.ts).`
   );
 }
 
