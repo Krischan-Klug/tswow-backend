@@ -183,10 +183,9 @@ These endpoints are provided by plugins and only available when their respective
 <details>
   <summary><strong>Realm Plugin</strong> (<code>/realm</code>)</summary>
 
-- POST <code>/realm/info</code>
-  - Retrieve realm info (from <code>realmlist</code>) and population.
-  - Body: <code>{ "id": 1 }</code>
-  - Responses: 200 info; 404 not found; 400/500 errors
+- GET <code>/realm</code>
+  - List all realms from <code>realmlist</code> including current online player count per realm.
+  - Responses: 200 <code>{ "realms": [{ id, name, address, port, population }] }</code>; 500 on errors
 
 </details>
 

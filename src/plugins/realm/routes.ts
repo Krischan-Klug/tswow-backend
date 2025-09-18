@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { getRealmInfo } from "./controller.js";
+import { listRealms } from "./controller.js";
 
 const router = Router();
 
-router.post("/info", getRealmInfo);
+router.get("/", listRealms);
 
 export default router;
