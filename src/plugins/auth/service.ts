@@ -2,28 +2,12 @@ import { authPool, computeVerifierFor } from "plugin-core";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import type { StringValue } from "ms";
-
-interface RegisterParams {
-  username: string;
-  password: string;
-  email?: string;
-}
-
-interface VerifyPasswordParams {
-  username: string;
-  password: string;
-}
-
-interface Account {
-  id: number;
-  username: string;
-  email: string;
-}
-
-interface VerifyPasswordResult {
-  ok: boolean;
-  account?: Account;
-}
+import type {
+  Account,
+  RegisterParams,
+  VerifyPasswordParams,
+  VerifyPasswordResult,
+} from "./types.js";
 
 export async function register({
   username,

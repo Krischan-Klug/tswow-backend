@@ -19,4 +19,4 @@ export const CasinoPlugin: ModulePlugin = {
 export default CasinoPlugin;
 
 export * from "./service.js";
-
+export * from "./types.js";

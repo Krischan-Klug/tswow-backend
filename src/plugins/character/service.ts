@@ -1,12 +1,5 @@
 import { getCharactersPool } from "plugin-core";
-
-export interface CharacterInfo {
-  guid: number;
-  name: string;
-  money: number;
-  xp: number;
-  level: number;
-}
+import type { CharacterInfo } from "./types.js";
 
 export async function getCharactersForAccount(
   realmId: number,
