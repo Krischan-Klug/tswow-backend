@@ -13,7 +13,9 @@ export interface CasinoCharacter {
   balancePretty: CurrencyBreakdown;
 }
 
-export type CoinFlipChoice = "heads" | "tails";
+// Coin flip uses boolean for simplicity:
+// true = heads, false = tails
+export type CoinFlipChoice = boolean;
 
 export interface CoinFlipBetRequest {
   accountId: number;

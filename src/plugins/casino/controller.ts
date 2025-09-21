@@ -1,11 +1,11 @@
 ﻿import { Response } from "express";
 import type { AuthRequest } from "plugin-core";
+import { getPlayableCharacters } from "./service.js";
 import {
-  CasinoError,
   executeCoinFlipBet,
-  getPlayableCharacters,
-  normalizeChoice,
-} from "./service.js";
+  normalizeCoinFlipChoice as normalizeChoice,
+} from "./games/coinFlip.js";
+import { CasinoError } from "./common/errors.js";
 
 function handleCasinoError(res: Response, error: CasinoError): Response {
   switch (error.code) {
@@ -57,11 +57,10 @@ export async function playCoinFlip(
   const characterGuid = Number(body.characterGuid);
   const rawWager = Number(body.wagerCopper ?? body.wager);
   const wagerCopper = Number.isFinite(rawWager) ? Math.trunc(rawWager) : NaN;
-  const choiceInput = typeof body.choice === "string" ? body.choice : "";
-  const choice = normalizeChoice(choiceInput || "");
+  const choice = normalizeChoice(body.choice);
 
   if (!choice) {
-    return res.status(400).json({ error: "Choice must be heads or tails" });
+    return res.status(400).json({ error: "Choice must be true or false" });
   }
 
   try {
